@@ -68,7 +68,7 @@ tests & docs
 - gzip for further compression of minified version
 
 ### setup
-```
+```sh
 $ git clone <this-repo> <target-folder>
 $ cd path/to/<target-folder>
 $ npm install
@@ -78,21 +78,21 @@ $ npm install
 - generates the annotated source to the `./docs` folder
 - uglifys source to `./dist/promise.min.js` for production environments ( ~1.8 kb )
 - browserifys test bundle to `./test/promise.test.bundle.js`
-```
+```sh
 $ grunt build
 ```
 for convenience there is a ready-made gzip command to further compress the minified version to `./dist/promise.min.js.gz` ( ~0.8 kb )
-```
+```sh
 $ npm run-script gzip
 ```
 
 ### run tests
 in nodejs
-```
+```sh
 $ npm test
 ```
-in your browser
-```
+in your browser ( requires _build_ )
+```sh
 $ python -m SimpleHTTPServer
 ```
-then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](localhost:8000/docs/src/promise.js.html) to read Promise's story - the annotated source
+then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](localhost:8000/docs/src/promise.js.html) to read Promise's story - the annotated source.
