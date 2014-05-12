@@ -17,8 +17,8 @@
 
   re_type_not_primitive = /object|function/,
 
-  // fix old webkit bug
-  // ------------------
+  // helper functions
+  // ----------------
 
   isFunction = ( function() {
 
@@ -27,7 +27,7 @@
       function_str = 'function',
       function_repr = '[object Function]';
 
-    return (
+    return ( // fix old webkit bug
       typeof re_type_not_primitive === function_str
       ? function( any ) {
         return object_toString.call( any ) === function_repr
@@ -36,7 +36,14 @@
         return any && typeof any === function_str
       }
     );
-  }() );
+  }() ),
+
+  array_forEach = [].forEach || function( iter ){
+    for(var array = this, i = array.length; i-- && iter( array[i], i, array ););
+  },
+
+  id = function( value ){ return value },
+  cancel = function( error ){ throw error };
 
   // Promise module
   // ==============
@@ -45,14 +52,14 @@
   // 
   // - allow to omit the `new` operator
   // - keep private `_state` information
-  // - keep registered call-/errbacks within `_queue`
-  // - pass this' `fulfill` and `reject` functions to the optional intial `then`
+  // - keep track of registered call-/errbacks within `_queue`
+  // - pass this' `fulfill` and `reject` functions to the optional initial `then`
   // 
   function Promise( then ) {
 
     var that = this;
 
-    if(!(that instanceof Promise)) return new Promise( then );
+    if ( !( that instanceof Promise ) ) return new Promise( then );
 
     that._state = PENDING;
     that._queue = [];
@@ -83,8 +90,8 @@
         promise = new Promise();
 
       that._queue.push( {
-        fulfill: isFunction( onFulfilled ) && onFulfilled,
-        reject: isFunction( onRejected ) && onRejected,
+        fulfill: isFunction( onFulfilled ) ? onFulfilled : id,
+        reject: isFunction( onRejected ) ? onRejected : cancel,
         promise: promise
       } );
 
@@ -144,21 +151,15 @@
       setTimeout( function() {
 
         var queue = that._queue,
-          object, promise, value;
+          object, promise, value, fn;
 
         while ( queue.length ) {
           object = queue.shift();
           promise = object.promise;
 
           try {
-            value = (
-              that._state === FULFILLED ? ( object.fulfill || function( value ) {
-                return value
-              } ) : ( object.reject || function( exception ) {
-                throw exception
-              } )
-            )( that._value );
-
+            fn = that._state === FULFILLED ? object.fulfill : object.reject;
+            value = fn( that._value );
             promise._resolve( value );
 
           } catch ( reason ) {
@@ -226,6 +227,33 @@
     }
   };
 
+  Promise.when = function( xs ) {
+
+    return new Promise( function( fulfill, reject ) {
+
+      var xs_len = xs.length,
+        values = Array( xs_len );
+
+      // the index `i` needs be closured
+      array_forEach.call( xs, function( x, i ) {
+        var proxy = new Promise();
+        proxy.then(
+          function( value ) {
+            values[ i ] = value;
+            if ( !--xs_len ) {
+              fulfill( values );
+            }
+          },
+          function( reason ) {
+            values[ i ] = reason;
+            reject( values );
+          }
+        );
+        proxy._resolve( x );
+      } )
+    } );
+  }
+
   // export
   // ------
   // 
@@ -246,7 +274,7 @@
     // 
     // restores the previous value assigned to `window.Promise`
     // and returns the inner reference Promise holds to itself.
-    
+
     var previous_Promise = root.Promise;
     Promise.noConflict = function() {
       root.Promise = previous_Promise;

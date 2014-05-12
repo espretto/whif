@@ -13,6 +13,10 @@
   </head>
   <body>
     <div id="mocha"></div>
+    <script src="/src/promise.js" charset="UTF-8"></script>
+    <script>
+      P = Promise.noConflict();
+    </script>
     <script src="/node_modules/mocha/mocha.js" charset="UTF-8"></script>
     <script>
       // mocha.setup({ ui : "bdd", reporter : 'tap' });
