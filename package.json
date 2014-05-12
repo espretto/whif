@@ -18,7 +18,8 @@
     "grunt-browserify": "~2.0.8"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/promise.test.js"
+    "test": "node_modules/.bin/mocha test/promise.test.js",
+    "gzip": "gzip -c9 dist/promise.min.js > dist/promise.min.js.gz"
   },
   "repository": {
     "type": "git",
