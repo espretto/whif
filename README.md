@@ -16,6 +16,7 @@ tests & docs
 ### prerequisites
 - python pygments for generating the annotated source
 - grunt-cli for use of grunt build commands
+- gzip
 
 ### setup
 ```
@@ -28,9 +29,11 @@ $ npm install
 - generates the annotated source to the `./docs` folder
 - uglifys source to `./dist/promise.min.js` for production environments ( ~1.8 kb )
 - browserifys test bundle to `./test/promise.test.bundle.js`
-- the latter command further compresses the uglified output ( ~0.8 kb )
 ```
 $ grunt build
+```
+for convenience there is a ready-made gzip command to further compress the minified version to `./dist/promise.min.js.gz` ( ~0.8 kb )
+```
 $ npm run-script gzip
 ```
 
