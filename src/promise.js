@@ -105,6 +105,7 @@
     // 
     fulfill: function( value ) {
       this._resolve( value );
+      return this;
     },
 
     // Promise#__reject__ ( public ):
@@ -112,6 +113,7 @@
     // 
     reject: function( reason ) {
       this._adopt( REJECTED, reason );
+      return this;
     },
 
     // Promise#__adopt__ ( private ):
