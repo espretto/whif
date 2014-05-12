@@ -3,7 +3,7 @@ Promises A+
 ===========
 
 this is a promises A+ implementation compliant with version 1.1 passing the [tests][2].
-many thanks to this lib's originator Rhys Brett-Bowen's and his great article on [Promises/A+ - understanding the spec through implementation][1].
+many thanks to this lib's originator Rhys Brett-Bowen and his great article on [Promises/A+ - understanding the spec through implementation][1].
 
 [![browser support](https://ci.testling.com/espretto/promise.png)](https://ci.testling.com/espretto/promise)
 
@@ -13,21 +13,32 @@ many thanks to this lib's originator Rhys Brett-Bowen's and his great article on
 tests & docs
 ------------
 
-to generate the annotated source, clone this repo and issue the following from its root directory.
-this assumes you have python's _pygments_ and _grunt-cli_ installed globally.
+### prerequisites
+- python pygments for generating the annotated source
+- grunt-cli for use of grunt build commands
+
+### setup
 ```
+$ git clone <this-repo> <target-folder>
+$ cd path/to/<target-folder>
 $ npm install
-$ grunt docker
 ```
-to generate the browser test script issue
+
+### build
+- generates the annotated source to the `./docs` folder
+- uglifys source to `./dist/promise.min.js` for production environments ( ~1.8 kb )
+- browserifys test bundle to `./test/promise.test.bundle.js`
 ```
-$ node_modules/.bin/browserify test/promise.test.js -o test/promise.test.bundle.js
+$ grunt build
 ```
-at last start a simple server, fire up your favorite browser and point it to `localhost:8000/docs/src/promise.js.html` and `localhost:8000/test` respectively.
-```
-$ python -m SimpleHTTPServer
-```
-to run the tests on _nodejs_ issue
+
+### run tests
+in nodejs
 ```
 $ npm test
 ```
+in your browser
+```
+$ python -m SimpleHTTPServer
+```
+then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](localhost:8000/docs/src/promise.js.html) to read Promise's story - the annotated source

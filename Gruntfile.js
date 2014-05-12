@@ -7,7 +7,6 @@ module.exports = function( grunt ) {
     'README.md',
     'src/promise.js'
   ];
-  LIVERELOAD = true;
 
   grunt.initConfig( {
 
@@ -76,25 +75,11 @@ module.exports = function( grunt ) {
       }
     },
 
-    connect: {
-      docs: {
-        options: {
-          livereload: LIVERELOAD,
-          hostname: '*',
-          keepalive: true,
-          port: 8000,
-          base: DOCS_OUT
+    browserify: {
+      test: {
+        files: {
+          'test/promise.test.bundle.js': 'test/promise.test.js'
         }
-      }
-    },
-
-    watch: {
-      options: {
-        livereload: LIVERELOAD
-      },
-      jsdoc: {
-        files: DOCS_IN,
-        tasks: ['docker']
       }
     }
 
@@ -102,17 +87,21 @@ module.exports = function( grunt ) {
 
   // task libs
   [
-    'grunt-contrib-connect',
-    'grunt-contrib-watch',
     'grunt-contrib-clean',
     'grunt-contrib-uglify',
+    'grunt-browserify',
     'grunt-docker',
   ].forEach( grunt.loadNpmTasks, grunt );
 
   // task definitions
-  grunt.registerTask( 'default', 'Generate and serve documentation', [
+  grunt.registerTask( 'build:docs', [
     'clean:docs',
-    'docker',
-    'connect:docs'
-  ] );
+    'docker'
+  ]);
+
+  grunt.registerTask( 'build', [
+    'build:docs',
+    'browserify',
+    'uglify'
+  ]);
 }

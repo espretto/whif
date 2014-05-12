@@ -70,7 +70,7 @@
           that._resolve( value );
         },
         function( reason ) {
-          that._transition( REJECTED, reason );
+          that._adopt( REJECTED, reason );
         }
       );
     }
@@ -111,17 +111,17 @@
     // provide alternative to initial `then` method
     // 
     reject: function( reason ) {
-      this._transition( REJECTED, reason );
+      this._adopt( REJECTED, reason );
     },
 
-    // Promise#__transition__ ( private ):
+    // Promise#__adopt__ ( private ):
     // 
     // - transition this promise from one state to another
     //   and take appropriate actions - delegate to `_run()`
     // - allow fulfill/reject without value/reason
     // - be confident `state` will always be one of the defined
     // 
-    _transition: function( state, value ) {
+    _adopt: function( state, value ) {
 
       var that = this,
         _state = that._state;
@@ -163,7 +163,7 @@
             promise._resolve( value );
 
           } catch ( reason ) {
-            promise._transition( REJECTED, reason );
+            promise._adopt( REJECTED, reason );
           }
         }
       }, 0 );
@@ -172,75 +172,84 @@
     // Promise#__resolve__ ( private ):
     // 
     // - if this is to be resolved with itself - throw
-    // - if `x` is another one of ours adopt its `_state` if it
+    // - if `any` is another one of ours adopt its `_state` if it
     //   is no longer `PENDING` or else prolong state adoption with `.then()`.
-    // - if `x` is neither none nor primitive and is
+    // - if `any` is neither none nor primitive and is
     //   _thenable_ i.e. has a `.then()` method assume it's a promise.
-    //   register this promise as `x`'s successor.
-    // - fulfill/reject this promise with `x` any otherwise
+    //   register this promise as `any`'s successor.
+    // - fulfill/reject this promise with `any` any otherwise
     // 
-    _resolve: function( x ) {
+    _resolve: function( any ) {
 
       var that = this;
 
-      if ( that === x ) {
-        that._transition( REJECTED, new TypeError() );
+      if ( that === any ) {
+        that._adopt( REJECTED, new TypeError() );
 
-      } else if ( x instanceof Promise ) {
-        if ( x._state === PENDING ) {
-          x.then(
+      } else if ( any instanceof Promise ) {
+        if ( any._state === PENDING ) {
+          any.then(
             function( value ) {
               that._resolve( value );
             },
             function( reason ) {
-              that._transition( REJECTED, reason );
+              that._adopt( REJECTED, reason );
             }
           );
         } else {
-          that._transition( x._state, x._value );
+          that._adopt( any._state, any._value );
         }
 
-      } else if ( x != null && re_type_not_primitive.test( typeof x ) ) {
+      } else if ( any != null && re_type_not_primitive.test( typeof any ) ) {
 
         var called = false,
           then;
 
         try {
-          then = x.then;
+          then = any.then;
           if ( isFunction( then ) ) {
-            then.call( x, function( y ) {
-              called || that._resolve( y );
+            then.call( any, function( value ) {
+              called || that._resolve( value );
               called = true;
-            }, function( r ) {
-              called || that._transition( REJECTED, r );
+            }, function( reason ) {
+              called || that._adopt( REJECTED, reason );
               called = true;
             } );
           } else {
-            that._transition( FULFILLED, x );
+            that._adopt( FULFILLED, any );
           }
         } catch ( reason ) {
-          called || that._transition( REJECTED, reason );
+          called || that._adopt( REJECTED, reason );
         }
       } else {
-        that._transition( FULFILLED, x );
+        that._adopt( FULFILLED, any );
       }
     }
   };
 
-  Promise.when = function( xs ) {
+  // Promise.__when__ ( public )
+  // 
+  // - group promises and fulfill when all are fulfilled,
+  //   reject as soon as one is rejected
+  // - expects an array-ish object, e.g. strings work, too.
+  // - `._resolve()` each passed item and proxy its future value
+  //   or the item _as is_ to a newly created Promise which in turn
+  //   fulfills/rejects the master Promise
+  //   
+  Promise.when = function( anys ) {
 
     return new Promise( function( fulfill, reject ) {
 
-      var xs_len = xs.length,
-        values = Array( xs_len );
+      var anys_len = anys.length,
+        values = Array( anys_len );
 
       // the index `i` needs be closured
-      array_forEach.call( xs, function( x, i ) {
+      array_forEach.call( anys, function( any, i ) {
         var proxy = new Promise();
         proxy.then(
           function( value ) {
             values[ i ] = value;
-            if ( !--xs_len ) {
+            if ( !--anys_len ) {
               fulfill( values );
             }
           },
@@ -249,7 +258,7 @@
             reject( values );
           }
         );
-        proxy._resolve( x );
+        proxy._resolve( any );
       } )
     } );
   }

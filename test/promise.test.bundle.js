@@ -7559,8 +7559,8 @@ if (typeof module !== 'undefined' && module.exports) {
 
   re_type_not_primitive = /object|function/,
 
-  // fix old webkit bug
-  // ------------------
+  // helper functions
+  // ----------------
 
   isFunction = ( function() {
 
@@ -7569,7 +7569,7 @@ if (typeof module !== 'undefined' && module.exports) {
       function_str = 'function',
       function_repr = '[object Function]';
 
-    return (
+    return ( // fix old webkit bug
       typeof re_type_not_primitive === function_str
       ? function( any ) {
         return object_toString.call( any ) === function_repr
@@ -7578,7 +7578,14 @@ if (typeof module !== 'undefined' && module.exports) {
         return any && typeof any === function_str
       }
     );
-  }() );
+  }() ),
+
+  array_forEach = [].forEach || function( iter ){
+    for(var array = this, i = array.length; i-- && iter( array[i], i, array ););
+  },
+
+  id = function( value ){ return value },
+  cancel = function( error ){ throw error };
 
   // Promise module
   // ==============
@@ -7602,10 +7609,10 @@ if (typeof module !== 'undefined' && module.exports) {
     if ( isFunction( then ) ) {
       then(
         function( value ) {
-          that._resolve( value );
+          that._c( value );
         },
         function( reason ) {
-          that._transition( REJECTED, reason );
+          that._a( REJECTED, reason );
         }
       );
     }
@@ -7617,7 +7624,7 @@ if (typeof module !== 'undefined' && module.exports) {
     // 
     // - create a new promise as required to be returned
     // - enqueue the triple
-    // - `_run()` in case this promise was already fulfilled/rejected
+    // - `_b()` in case this promise was already fulfilled/rejected
     // 
     then: function( onFulfilled, onRejected ) {
 
@@ -7625,12 +7632,12 @@ if (typeof module !== 'undefined' && module.exports) {
         promise = new Promise();
 
       that._queue.push( {
-        fulfill: isFunction( onFulfilled ) && onFulfilled,
-        reject: isFunction( onRejected ) && onRejected,
+        fulfill: isFunction( onFulfilled ) ? onFulfilled : id,
+        reject: isFunction( onRejected ) ? onRejected : cancel,
         promise: promise
       } );
 
-      that._run();
+      that._b();
 
       return promise;
     },
@@ -7639,24 +7646,24 @@ if (typeof module !== 'undefined' && module.exports) {
     // provide alternative to initial `then` method
     // 
     fulfill: function( value ) {
-      this._resolve( value );
+      this._c( value );
     },
 
     // Promise#__reject__ ( public ):
     // provide alternative to initial `then` method
     // 
     reject: function( reason ) {
-      this._transition( REJECTED, reason );
+      this._a( REJECTED, reason );
     },
 
-    // Promise#__transition__ ( private ):
+    // Promise#__a__ ( private ):
     // 
     // - transition this promise from one state to another
-    //   and take appropriate actions - delegate to `_run()`
+    //   and take appropriate actions - delegate to `_b()`
     // - allow fulfill/reject without value/reason
     // - be confident `state` will always be one of the defined
     // 
-    _transition: function( state, value ) {
+    _a: function( state, value ) {
 
       var that = this,
         _state = that._state;
@@ -7664,20 +7671,20 @@ if (typeof module !== 'undefined' && module.exports) {
       if ( _state !== state && _state === PENDING ) {
         that._state = state;
         that._value = value;
-        that._run();
+        that._b();
       }
     },
 
-    // Promise#__run__ ( private ):
+    // Promise#__b__ ( private ):
     // 
     // - if still `PENDING` return
     // - flush callstack and await next tick
     // - dequeue triples in the order registered, for each:
     //   - call registered fulfill/reject handlers dependent on the transition
     //   - reject immediately if an erro is thrown
-    //   - `._resolve()` the returned value
+    //   - `._c()` the returned value
     //   
-    _run: function() {
+    _b: function() {
 
       var that = this;
 
@@ -7686,103 +7693,105 @@ if (typeof module !== 'undefined' && module.exports) {
       setTimeout( function() {
 
         var queue = that._queue,
-          object, promise, value;
+          object, promise, value, fn;
 
         while ( queue.length ) {
           object = queue.shift();
           promise = object.promise;
 
           try {
-            value = (
-              that._state === FULFILLED
-              ? ( object.fulfill || function( value ) {
-                return value
-              } )
-              : ( object.reject || function( exception ) {
-                throw exception
-              } )
-            )( that._value );
-
-            promise._resolve( value );
+            fn = that._state === FULFILLED ? object.fulfill : object.reject;
+            value = fn( that._value );
+            promise._c( value );
 
           } catch ( reason ) {
-            promise._transition( REJECTED, reason );
+            promise._a( REJECTED, reason );
           }
         }
       }, 0 );
     },
 
-    // Promise#__resolve__ ( private ):
+    // Promise#__c__ ( private ):
     // 
     // - if this is to be resolved with itself - throw
-    // - if `x` is another one of ours adopt its `_state` if it
+    // - if `any` is another one of ours adopt its `_state` if it
     //   is no longer `PENDING` or else prolong state adoption with `.then()`.
-    // - if `x` is neither none nor primitive and is
+    // - if `any` is neither none nor primitive and is
     //   _thenable_ i.e. has a `.then()` method assume it's a promise.
-    //   register this promise as `x`'s successor.
-    // - fulfill/reject this promise with `x` any otherwise
+    //   register this promise as `any`'s successor.
+    // - fulfill/reject this promise with `any` any otherwise
     // 
-    _resolve: function( x ) {
+    _c: function( any ) {
 
       var that = this;
 
-      if ( that === x ) {
-        that._transition( REJECTED, new TypeError() );
+      if ( that === any ) {
+        that._a( REJECTED, new TypeError() );
 
-      } else if ( x instanceof Promise ) {
-        if ( x._state === PENDING ) {
-          x.then(
+      } else if ( any instanceof Promise ) {
+        if ( any._state === PENDING ) {
+          any.then(
             function( value ) {
-              that._resolve( value );
+              that._c( value );
             },
             function( reason ) {
-              that._transition( REJECTED, reason );
+              that._a( REJECTED, reason );
             }
           );
         } else {
-          that._transition( x._state, x._value );
+          that._a( any._state, any._value );
         }
 
-      } else if ( x != null && re_type_not_primitive.test( typeof x ) ) {
+      } else if ( any != null && re_type_not_primitive.test( typeof any ) ) {
 
         var called = false,
           then;
 
         try {
-          then = x.then;
+          then = any.then;
           if ( isFunction( then ) ) {
-            then.call( x, function( y ) {
-              called || that._resolve( y );
+            then.call( any, function( value ) {
+              called || that._c( value );
               called = true;
-            }, function( r ) {
-              called || that._transition( REJECTED, r );
+            }, function( reason ) {
+              called || that._a( REJECTED, reason );
               called = true;
             } );
           } else {
-            that._transition( FULFILLED, x );
+            that._a( FULFILLED, any );
           }
         } catch ( reason ) {
-          called || that._transition( REJECTED, reason );
+          called || that._a( REJECTED, reason );
         }
       } else {
-        that._transition( FULFILLED, x );
+        that._a( FULFILLED, any );
       }
     }
   };
 
-  Promise.when = function( xs ) {
+  // Promise.__when__ ( public )
+  // 
+  // - group promises and fulfill when all are fulfilled,
+  //   reject as soon as one is rejected
+  // - expects an array-ish object, e.g. strings work, too.
+  // - `._c()` each passed item and proxy its future value
+  //   or the item _as is_ to a newly created Promise which in turn
+  //   fulfills/rejects the master Promise
+  //   
+  Promise.when = function( anys ) {
 
     return new Promise( function( fulfill, reject ) {
 
-      var values = Array( xs.length );
+      var anys_len = anys.length,
+        values = Array( anys_len );
 
       // the index `i` needs be closured
-      array_forEach.call( xs, function( x, i ) {
+      array_forEach.call( anys, function( any, i ) {
         var proxy = new Promise();
         proxy.then(
           function( value ) {
             values[ i ] = value;
-            if ( !--xs_len ) {
+            if ( !--anys_len ) {
               fulfill( values );
             }
           },
@@ -7791,7 +7800,7 @@ if (typeof module !== 'undefined' && module.exports) {
             reject( values );
           }
         );
-        proxy._resolve( x );
+        proxy._c( any );
       } )
     } );
   }
