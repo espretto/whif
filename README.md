@@ -31,7 +31,7 @@ $ npm install
 - the latter command further compresses the uglified output ( ~0.8 kb )
 ```
 $ grunt build
-$ npm gzip
+$ npm run-script gzip
 ```
 
 ### run tests
