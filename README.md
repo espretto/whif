@@ -24,9 +24,10 @@ var promise = new Promise( function( fulfill, reject ){
   }
 })
 ```
-fulfill callbacks may return promises which's state and `value`/`reason` will be adopted by the newly created one returned by `then`. the deferred api is available for convenience, usually `fulfill` and `reject` are not exposed by promises. however, calling `fulfill` or `reject` on a once fulfilled or rejected promise will have no effect. both `callback` and `errback` are optional arguments to `then`. their default behavior is to proxy the `value`/`reason` to the next promise.
+fulfill callbacks may return promises ( or any other A+ compliant thenables! ) which's state and `value`/`reason` will be adopted by the newly created one returned by `then`. the deferred api is available for convenience, usually `fulfill` and `reject` are not exposed by promises. however, calling `fulfill` or `reject` on a once fulfilled or rejected promise will have no effect. both `callback` and `errback` are optional arguments to `then`. their default behavior is to proxy the `value`/`reason` to the next promise.
 ```js
 .then( function( number ){ // callback
+
   var call = new Promise();
 
   setTimeout( function hesitate(){
@@ -57,6 +58,35 @@ returning the inital `promise` will lead to an endless recursive chain of callba
 }, function( reason ){ // errback
   him.goAfter( reason );
 });
+```
+another very usefull feature is to group promises to a single one which will only be resolved if every sub-promise is resolved and rejected as soon as one of them fails.
+```js
+var requirements = [
+  // if is not thenable, a promise is created to be resolved with the value
+  'non-thenable',
+  // any A+ 1.1 compliant thenable, jQuery works in this case
+  jQuery.get('http://url.to/some/resource.json'),
+  // own promises
+  new Promise( function( fulfill, reject ){
+    var n = Math.random();
+    if( n < 0.5 ) fulfill( 'lucky' );
+    else reject( 'unlucky' );
+  })
+];
+
+Promise.group( requirements ).then(
+  function( values ){
+    // in case every promise was resolved
+    values[ 0 ]; // 'non-thenable'
+    values[ 1 ]; // some json data
+    values[ 2 ]; // 'lucky'
+  },
+  function( tuple ){
+    // in case we're unlucky
+    var reason = tuple[ 0 ]; // 'unlucky', reason
+    var index  = tuple[ 1 ]; // 2  , index of the promise that was rejected
+  }
+);
 ```
 
 tests & docs

@@ -238,7 +238,7 @@
   //   or the item _as is_ to a newly created Promise which in turn
   //   fulfills/rejects the master Promise
   //   
-  Promise.when = function( anys ) {
+  Promise.group = function( anys ) {
 
     return new Promise( function( fulfill, reject ) {
 
@@ -256,8 +256,7 @@
             }
           },
           function( reason ) {
-            values[ i ] = reason;
-            reject( values );
+            reject( [ reason, i ] );
           }
         );
         proxy._resolve( any );
