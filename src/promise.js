@@ -39,7 +39,7 @@
   }() ),
 
   array_forEach = [].forEach || function( iter ){
-    for(var array = this, i = array.length; i-- && iter( array[i], i, array ););
+    for(var array = this, i = array.length; i--; iter( array[i], i, array ));
   },
 
   id = function( value ){ return value },
