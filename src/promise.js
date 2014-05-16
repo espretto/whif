@@ -10,12 +10,13 @@
 
   PENDING = -1,
   REJECTED = 0,
-  FULFILLED = 1,
+  RESOLVED = 1,
 
-  // regular expressions
-  // -------------------
+  // well known strings
+  // ------------------
 
-  re_type_not_primitive = /object|function/,
+  str_object = 'object',
+  str_function = 'function',
 
   // helper functions
   // ----------------
@@ -24,26 +25,29 @@
 
     var object = {},
       object_toString = object.toString,
-      function_str = 'function',
-      function_repr = '[object Function]';
+      repr_function = '[object Function]';
 
     return ( // fix old webkit bug
-      typeof re_type_not_primitive === function_str
-      ? function( any ) {
-        return object_toString.call( any ) === function_repr
+      typeof /re/ === str_function
+      ? function( value ) {
+        return value && object_toString.call( value ) === repr_function
       }
-      : function( any ) {
-        return any && typeof any === function_str
+      : function( value ) {
+        return value && typeof value === str_function
       }
     );
   }() ),
 
-  array_forEach = [].forEach || function( iter ){
-    for(var array = this, i = array.length; i--; iter( array[i], i, array ));
-  },
+  array_forEach = [].forEach || function( iter ) {
+    for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
+  };
 
-  id = function( value ){ return value },
-  cancel = function( error ){ throw error };
+  function id( value ) { return value }
+  function cancel( error ) { throw error }
+  function isPrimitve( value ){
+    var type = typeof value;
+    return value == null || type !== str_object && type !== str_function;
+  }
 
   // Promise module
   // ==============
@@ -53,7 +57,7 @@
   // - allow to omit the `new` operator
   // - keep private `_state` information
   // - keep track of registered call-/errbacks within `_queue`
-  // - pass this' `fulfill` and `reject` functions to the optional initial `then`
+  // - pass this' `resolve` and `reject` functions to the optional initial `then`
   // 
   function Promise( then ) {
 
@@ -67,10 +71,10 @@
     if ( isFunction( then ) ) {
       then(
         function( value ) {
-          that._resolve( value );
+          that.resolve( value );
         },
         function( reason ) {
-          that._adopt( REJECTED, reason );
+          adopt( that, REJECTED, reason );
         }
       );
     }
@@ -82,184 +86,175 @@
     // 
     // - create a new promise as required to be returned
     // - enqueue the triple
-    // - `_run()` in case this promise was already fulfilled/rejected
+    // - `run()` in case this promise was already RESOLVed/rejected
     // 
-    then: function( onFulfilled, onRejected ) {
+    then: function( onResolved, onRejected ) {
 
       var that = this,
         promise = new Promise();
 
       that._queue.push( {
-        fulfill: isFunction( onFulfilled ) ? onFulfilled : id,
+        resolve: isFunction( onResolved ) ? onResolved : id,
         reject: isFunction( onRejected ) ? onRejected : cancel,
         promise: promise
       } );
 
-      that._run();
+      run( that );
 
       return promise;
     },
 
-    // Promise#__fulfill__ ( public ):
-    // provide alternative to initial `then` method
+    // Promise#_resolve__ ( public ):
     // 
-    fulfill: function( value ) {
-      this._resolve( value );
-      return this;
+    // - if this is to be resolved with itself - throw
+    // - if `value` is another one of ours adopt its `_state` if it
+    //   is no longer `PENDING` or else prolong state adoption with `.then()`.
+    // - if `value` is neither none nor primitive and is
+    //   _thenable_ i.e. has a `.then()` method assume it's a promise.
+    //   register this promise as `value`'s successor.
+    // - resolve/reject this promise with `value` value otherwise
+    // 
+    resolve: function( value ) {
+
+      var that = this;
+
+      if ( that === value ) {
+        adopt( that, REJECTED, new TypeError() );
+
+      } else if ( value instanceof Promise ) {
+        if ( value._state === PENDING ) {
+          value.then(
+            function( value ) {
+              that.resolve( value );
+            },
+            function( reason ) {
+              adopt( that, REJECTED, reason );
+            }
+          );
+        } else {
+          adopt( that, value._state, value._value );
+        }
+
+      } else if ( !isPrimitve( value ) ) {
+
+        var called = false,
+          then;
+
+        try {
+          then = value.then;
+          if ( isFunction( then ) ) {
+            then.call( value, function( value ) {
+              called || that.resolve( value );
+              called = true;
+            }, function( reason ) {
+              called || adopt( that, REJECTED, reason );
+              called = true;
+            } );
+          } else {
+            adopt( that, RESOLVED, value );
+          }
+        } catch ( reason ) {
+          called || adopt( that, REJECTED, reason );
+        }
+      } else {
+        adopt( that, RESOLVED, value );
+      }
+      return that;
     },
 
     // Promise#__reject__ ( public ):
     // provide alternative to initial `then` method
     // 
     reject: function( reason ) {
-      this._adopt( REJECTED, reason );
+      adopt( REJECTED, reason );
       return this;
-    },
+    }
+  }
 
-    // Promise#__adopt__ ( private ):
-    // 
-    // - transition this promise from one state to another
-    //   and take appropriate actions - delegate to `_run()`
-    // - allow fulfill/reject without value/reason
-    // - be confident `state` will always be one of the defined
-    // 
-    _adopt: function( state, value ) {
+  // __adopt__ ( private ):
+  // 
+  // - transition this promise from one state to another
+  //   and take appropriate actions - delegate to `run()`
+  // - allow resolve/reject without value/reason
+  // - be confident `state` will always be one of the defined
+  // 
+  function adopt( promise, state, value ) {
 
-      var that = this,
-        _state = that._state;
+    var _state = promise._state;
 
-      if ( _state !== state && _state === PENDING ) {
-        that._state = state;
-        that._value = value;
-        that._run();
-      }
-    },
+    if ( _state !== state && _state === PENDING ) {
+      promise._state = state;
+      promise._value = value;
+      run( promise );
+    }
+  }
 
-    // Promise#__run__ ( private ):
-    // 
-    // - if still `PENDING` return
-    // - flush callstack and await next tick
-    // - dequeue triples in the order registered, for each:
-    //   - call registered fulfill/reject handlers dependent on the transition
-    //   - reject immediately if an erro is thrown
-    //   - `._resolve()` the returned value
-    //   
-    _run: function() {
+  // __run__ ( private ):
+  // 
+  // - if still `PENDING` return
+  // - flush callstack and await next tick
+  // - dequeue triples in the order registered, for each:
+  //   - call registered resolve/reject handlers dependent on the transition
+  //   - reject immediately if an erro is thrown
+  //   - `.resolve()` the returned value
+  //   
+  function run( promise ) {
 
-      var that = this;
+    if ( promise._state === PENDING ) return;
 
-      if ( that._state === PENDING ) return;
+    setTimeout( function() {
 
-      setTimeout( function() {
+      var queue = promise._queue,
+        object, successor, value, fn;
 
-        var queue = that._queue,
-          object, promise, value, fn;
-
-        while ( queue.length ) {
-          object = queue.shift();
-          promise = object.promise;
-
-          try {
-            fn = that._state === FULFILLED ? object.fulfill : object.reject;
-            value = fn( that._value );
-            promise._resolve( value );
-
-          } catch ( reason ) {
-            promise._adopt( REJECTED, reason );
-          }
-        }
-      }, 0 );
-    },
-
-    // Promise#__resolve__ ( private ):
-    // 
-    // - if this is to be resolved with itself - throw
-    // - if `any` is another one of ours adopt its `_state` if it
-    //   is no longer `PENDING` or else prolong state adoption with `.then()`.
-    // - if `any` is neither none nor primitive and is
-    //   _thenable_ i.e. has a `.then()` method assume it's a promise.
-    //   register this promise as `any`'s successor.
-    // - fulfill/reject this promise with `any` any otherwise
-    // 
-    _resolve: function( any ) {
-
-      var that = this;
-
-      if ( that === any ) {
-        that._adopt( REJECTED, new TypeError() );
-
-      } else if ( any instanceof Promise ) {
-        if ( any._state === PENDING ) {
-          any.then(
-            function( value ) {
-              that._resolve( value );
-            },
-            function( reason ) {
-              that._adopt( REJECTED, reason );
-            }
-          );
-        } else {
-          that._adopt( any._state, any._value );
-        }
-
-      } else if ( any != null && re_type_not_primitive.test( typeof any ) ) {
-
-        var called = false,
-          then;
+      while ( queue.length ) {
+        object = queue.shift();
+        successor = object.promise;
 
         try {
-          then = any.then;
-          if ( isFunction( then ) ) {
-            then.call( any, function( value ) {
-              called || that._resolve( value );
-              called = true;
-            }, function( reason ) {
-              called || that._adopt( REJECTED, reason );
-              called = true;
-            } );
-          } else {
-            that._adopt( FULFILLED, any );
-          }
+          fn = promise._state === RESOLVED ? object.resolve : object.reject;
+          value = fn( promise._value );
+          successor.resolve( value );
+
         } catch ( reason ) {
-          called || that._adopt( REJECTED, reason );
+          adopt( successor, REJECTED, reason );
         }
-      } else {
-        that._adopt( FULFILLED, any );
       }
-    }
-  };
+    }, 0 );
+  }
 
   // Promise.__when__ ( public )
   // 
-  // - group promises and fulfill when all are fulfilled,
+  // - group promises and resolve when all are resolved,
   //   reject as soon as one is rejected
-  // - expects an array-ish object, e.g. strings work, too.
-  // - `._resolve()` each passed item and proxy its future value
+  // - `.resolve()` each passed item and proxy its future value
   //   or the item _as is_ to a newly created Promise which in turn
-  //   fulfills/rejects the master Promise
+  //   resolves/rejects the master Promise
   //   
-  Promise.group = function( anys ) {
+  Promise.group = function() {
+    
+    var args = arguments;
 
-    return new Promise( function( fulfill, reject ) {
+    return new Promise( function( resolve, reject ) {
 
-      var anys_len = anys.length,
-        values = Array( anys_len );
+      var args_len = args.length,
+        values = Array( args_len );
 
       // the index `i` needs be closured
-      array_forEach.call( anys, function( any, i ) {
+      array_forEach.call( args, function( value, i ) {
         var proxy = new Promise();
         proxy.then(
           function( value ) {
             values[ i ] = value;
-            if ( !--anys_len ) {
-              fulfill( values );
+            if ( !--args_len ) {
+              resolve( values );
             }
           },
           function( reason ) {
             reject( [ reason, i ] );
           }
         );
-        proxy._resolve( any );
+        proxy.resolve( value );
       } )
     } );
   }
@@ -268,27 +263,28 @@
   // ------
   // 
   // - nodejs
-  // - amd
-  // - browser
+  // - amd - anonymous
+  // - browser - opt to rename
 
-  if ( typeof module !== 'undefined' && module.exports ) {
+  if ( typeof module === str_object && module.exports ) {
     module.exports = Promise;
-  } else if ( typeof define === 'function' && define.amd ) {
+  } else if ( typeof define === str_function && define.amd ) {
     define( function() {
       return Promise
     } );
   } else {
-    root.Promise = Promise;
 
     // Promise.__noConflict__ ( public ):
     // 
     // restores the previous value assigned to `window.Promise`
     // and returns the inner reference Promise holds to itself.
-
+    // 
     var previous_Promise = root.Promise;
     Promise.noConflict = function() {
       root.Promise = previous_Promise;
       return Promise;
     }
+
+    root.Promise = Promise;
   }
 }( this ) )

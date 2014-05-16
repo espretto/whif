@@ -106,7 +106,7 @@ $ npm install
 
 ### build
 - generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/promise.min.js` for production environments ( ~1.8 kb )
+- uglifys source to `./dist/promise.min.js` for production environments ( ~1.7 kb )
 - browserifys test bundle to `./test/promise.test.bundle.js`
 ```sh
 $ grunt build
@@ -121,7 +121,7 @@ in nodejs
 ```sh
 $ npm test
 ```
-in your browser ( requires _build_ )
+in your browser ( requires `grunt build` )
 ```sh
 $ python -m SimpleHTTPServer
 ```

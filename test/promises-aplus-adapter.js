@@ -2,10 +2,10 @@ var Promise = require( '../src/promise.js' );
 
 module.exports = {
   resolved: function( value ) {
-    return new Promise( function( fulfill ) {
-      fulfill( value );
+    return new Promise( function( resolve ) {
+      resolve( value );
     } );
-    // return new Promise().fulfill( value );
+    // return new Promise().resolve( value );
   },
   rejected: function( reason ) {
     return new Promise( function( _, reject ) {
@@ -17,8 +17,8 @@ module.exports = {
     var resolve, reject;
     // var promise = new Promise();
     return {
-      promise: new Promise( function( ful, rej ) {
-        resolve = ful;
+      promise: new Promise( function( res, rej ) {
+        resolve = res;
         reject = rej;
       } ),
       resolve: resolve,
