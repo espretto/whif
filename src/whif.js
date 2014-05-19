@@ -165,8 +165,9 @@
     // provide alternative to initial `then` method
     // 
     _reject: function( reason ) {
-      adopt( REJECTED, reason );
-      return this;
+      var that = this;
+      adopt( that, REJECTED, reason );
+      return that;
     }
   };
 
