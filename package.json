@@ -1,8 +1,8 @@
 {
-  "name": "promise",
+  "name": "whif",
   "version": "1.0.0",
   "description": "Promises A+ implementation",
-  "main": "Gruntfile.js",
+  "main": "src/whif.js",
   "directories": {
     "doc": "docs",
     "test": "test"
