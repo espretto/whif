@@ -38,6 +38,21 @@
     );
   }() ),
 
+  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
+  nextTick = ( function(){
+    
+    var nextTick = typeof process === str_object && process.nextTick,
+      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
+      i = prefixes.length;
+
+    while( i-- && !isFunction( nextTick ) ){
+      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
+    }
+
+    return nextTick || root.setImmediate || setTimeout;
+
+  }() ),
+  
   array_forEach = [].forEach || function( iter ) {
     for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
   };
@@ -227,7 +242,7 @@
     if( promise._sync ){
       _run();
     } else {
-      setTimeout( _run, 0 );
+      nextTick( _run );
     }
   }
 

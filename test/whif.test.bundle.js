@@ -7540,6 +7540,7 @@ if (typeof module !== 'undefined' && module.exports) {
 });
 
 },{}],39:[function(require,module,exports){
+(function (process){
 ( function( root ) {
 
   // baseline setup
@@ -7580,6 +7581,21 @@ if (typeof module !== 'undefined' && module.exports) {
     );
   }() ),
 
+  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
+  nextTick = ( function(){
+    
+    var nextTick = typeof process === str_object && process.nextTick,
+      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
+      i = prefixes.length;
+
+    while( i-- && !isFunction( nextTick ) ){
+      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
+    }
+
+    return nextTick || root.setImmediate || setTimeout;
+
+  }() ),
+  
   array_forEach = [].forEach || function( iter ) {
     for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
   };
@@ -7598,10 +7614,11 @@ if (typeof module !== 'undefined' && module.exports) {
   // 
   // - allow to omit the `new` operator
   // - keep private `_state` information
+  // - set whether this promise should be resolved (a-)synchronously
   // - keep track of registered call-/errbacks within `_queue`
   // - pass this' `_resolve` and `_reject` functions to the optional initial `then`
   // 
-  function whif( then ) {
+  function whif( then, sync ) {
 
     var that = this;
 
@@ -7609,6 +7626,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
     that._state = PENDING;
     that._queue = [];
+    that._sync = !!sync;
 
     if ( isFunction( then ) ) {
       then(
@@ -7630,10 +7648,10 @@ if (typeof module !== 'undefined' && module.exports) {
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function( onResolved, onRejected ) {
+    then: function( onResolved, onRejected, sync ) {
 
       var that = this,
-        promise = new whif();
+        promise = new whif( null, sync );
 
       that._queue.push( {
         resolve: isFunction( onResolved ) ? onResolved : id,
@@ -7707,8 +7725,9 @@ if (typeof module !== 'undefined' && module.exports) {
     // provide alternative to initial `then` method
     // 
     _reject: function( reason ) {
-      adopt( REJECTED, reason );
-      return this;
+      var that = this;
+      adopt( that, REJECTED, reason );
+      return that;
     }
   };
 
@@ -7743,7 +7762,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
     if ( promise._state === PENDING ) return;
 
-    setTimeout( function() {
+    function _run() {
 
       var queue = promise._queue,
         object, successor, value, fn;
@@ -7761,7 +7780,13 @@ if (typeof module !== 'undefined' && module.exports) {
           adopt( successor, REJECTED, reason );
         }
       }
-    }, 0 );
+    }
+
+    if( promise._sync ){
+      _run();
+    } else {
+      nextTick( _run );
+    }
   }
 
   // whif.__when__ ( public )
@@ -7830,7 +7855,8 @@ if (typeof module !== 'undefined' && module.exports) {
     root.whif = whif;
   }
 }( this ) )
-},{}],40:[function(require,module,exports){
+}).call(this,require("FWaASH"))
+},{"FWaASH":5}],40:[function(require,module,exports){
 var whif = require( '../src/whif.js' );
 
 module.exports = {

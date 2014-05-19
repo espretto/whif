@@ -63,6 +63,21 @@ returning the inital `condition` will lead to an endless recursive chain of call
   him.goAfter( reason );
 });
 ```
+one rather special yet easy implemented feature is to not resolve promises asynchronously as requried by the spec. if synchronous resolution is an option at all, this will improve performance, especially on the server-side. [read more][4]
+```js
+var syncPromise = whif( function( resolve, reject ){
+  resolve( 123 );
+  console.log( 456 )
+}, true ) // `sync` as 2nd argument
+.then( function( number ){
+  console.log( number );
+}, null, false ) // `sync` as 3rd argument (  2nd arugment errback defaults )
+```
+the second argument passed to `whif` ( or thrid to `then` ) decides whether to resolve the returned promise synchronously or not ( defaults to false - asynchronously ). in the above example `123` would be logged first, followed by `456`. by default resolution is prolonged until the next runloop hence `123` would be logged last, preceded by `456`.
+[read more][4].
+
+[4]: http://thanpol.as/javascript/promises-a-performance-hits-you-should-be-aware-of
+
 another very usefull feature is to group promises to a single one which will only be resolved if every sub-promise is resolved and rejected as soon as one of them fails.
 ```js
 var requirements = [
@@ -115,12 +130,12 @@ $ npm install
 
 ### build
 - generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/whif.min.js` for production environments ( ~1.7 kb )
+- uglifys source to `./dist/whif.min.js` for production environments ( ~1.9 kb )
 - browserifys test bundle to `./test/whif.test.bundle.js`
 ```sh
 $ grunt build
 ```
-for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` ( ~0.8 kb )
+for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` ( ~0.9 kb )
 ```sh
 $ npm run-script gzip
 ```
