@@ -29,7 +29,7 @@ success callbacks may return promises ( or any other A+ compliant thenables! ) w
 ```js
 .then( function( number ){ // callback
 
-  var call = new Promise();
+  var call = new whif();
 
   setTimeout( function hesitate(){
     var date = him.call( number );
@@ -74,7 +74,7 @@ var requirements = [
   jQuery.get('http://url.to/some/resource.json'),
   
   // own promises
-  new Promise( function( resolve, reject ){
+  new whif( function( resolve, reject ){
     var n = Math.random();
     if( n < 0.5 ) resolve( 'lucky' );
     else reject( 'unlucky' );
