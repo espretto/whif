@@ -18,23 +18,25 @@
     "grunt-browserify": "~2.0.8"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/promise.test.js",
-    "gzip": "gzip -c9 dist/promise.min.js > dist/promise.min.js.gz"
+    "test": "node_modules/.bin/mocha test/whif.test.js",
+    "gzip": "gzip -c9 dist/whif.min.js > dist/whif.min.js.gz"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/espretto/promise_impl.git"
+    "url": "https://github.com/espretto/whif.git"
   },
   "keywords": [
-    "promises",
-    "A",
+    "promise",
+    "deferred",
+    "A+",
     "plus",
-    "deferred"
+    "when",
+    "asynchronous"
   ],
   "author": "espretto",
   "license": "BSD-2-Clause",
   "bugs": {
-    "url": "https://github.com/espretto/promise_impl/issues"
+    "url": "https://github.com/espretto/whif/issues"
   },
   "testling": {
     "browsers": [

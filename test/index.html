@@ -13,10 +13,10 @@
   </head>
   <body>
     <div id="mocha"></div>
-    <script src="/src/promise.js" charset="UTF-8"></script>
+    <script src="/src/whif.js" charset="UTF-8"></script>
     <script>
       // run manual tests from the console
-      P = Promise.noConflict();
+      P = whif.noConflict();
     </script>
     <script src="/node_modules/mocha/mocha.js" charset="UTF-8"></script>
     <script>
@@ -26,7 +26,7 @@
         globals: ["console","__fxdriver_unwrapped"]
       }); 
     </script>
-    <script src="/test/promise.test.bundle.js" charset="UTF-8"></script>
+    <script src="/test/whif.test.bundle.js" charset="UTF-8"></script>
     <script>
       window.onload = mocha.run;
     </script>

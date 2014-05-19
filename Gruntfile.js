@@ -5,7 +5,7 @@ module.exports = function( grunt ) {
   DOCS_OUT = 'docs',
   DOCS_IN = [
     'README.md',
-    'src/promise.js'
+    'src/whif.js'
   ];
 
   grunt.initConfig( {
@@ -70,7 +70,7 @@ module.exports = function( grunt ) {
       },
       all: {
         files: {
-          'dist/promise.min.js': ['src/promise.js']
+          'dist/whif.min.js': ['src/whif.js']
         }
       }
     },
@@ -78,7 +78,7 @@ module.exports = function( grunt ) {
     browserify: {
       test: {
         files: {
-          'test/promise.test.bundle.js': 'test/promise.test.js'
+          'test/whif.test.bundle.js': 'test/whif.test.js'
         }
       }
     }

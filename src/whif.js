@@ -5,8 +5,8 @@
 
   var // one to var them all
 
-  // promise states
-  // --------------
+  // whif states
+  // -----------
 
   PENDING = -1,
   REJECTED = 0,
@@ -49,21 +49,21 @@
     return value == null || type !== str_object && type !== str_function;
   }
 
-  // Promise module
-  // ==============
+  // whif module
+  // ===========
 
-  // Promise#__constructor__ ( pubic ):
+  // __whif#constructor__ ( pubic ):
   // 
   // - allow to omit the `new` operator
   // - keep private `_state` information
   // - keep track of registered call-/errbacks within `_queue`
-  // - pass this' `resolve` and `reject` functions to the optional initial `then`
+  // - pass this' `_resolve` and `_reject` functions to the optional initial `then`
   // 
-  function Promise( then ) {
+  function whif( then ) {
 
     var that = this;
 
-    if ( !( that instanceof Promise ) ) return new Promise( then );
+    if ( !( that instanceof whif ) ) return new whif( then );
 
     that._state = PENDING;
     that._queue = [];
@@ -71,7 +71,7 @@
     if ( isFunction( then ) ) {
       then(
         function( value ) {
-          that.resolve( value );
+          that._resolve( value );
         },
         function( reason ) {
           adopt( that, REJECTED, reason );
@@ -80,18 +80,18 @@
     }
   };
 
-  Promise.prototype = {
+  whif.prototype = {
 
-    // Promise#__then__ ( public ):
+    // __whif#then__ ( public ):
     // 
     // - create a new promise as required to be returned
     // - enqueue the triple
-    // - `run()` in case this promise was already RESOLVed/rejected
+    // - `run()` in case this promise was already resolved/rejected
     // 
     then: function( onResolved, onRejected ) {
 
       var that = this,
-        promise = new Promise();
+        promise = new whif();
 
       that._queue.push( {
         resolve: isFunction( onResolved ) ? onResolved : id,
@@ -104,28 +104,28 @@
       return promise;
     },
 
-    // Promise#_resolve__ ( public ):
+    // __whif#_resolve__ ( public ):
     // 
     // - if this is to be resolved with itself - throw
     // - if `value` is another one of ours adopt its `_state` if it
     //   is no longer `PENDING` or else prolong state adoption with `.then()`.
     // - if `value` is neither none nor primitive and is
     //   _thenable_ i.e. has a `.then()` method assume it's a promise.
-    //   register this promise as `value`'s successor.
-    // - resolve/reject this promise with `value` value otherwise
+    //   register this whif as `value`'s successor.
+    // - resolve/reject this whif with `value` value otherwise
     // 
-    resolve: function( value ) {
+    _resolve: function( value ) {
 
       var that = this;
 
       if ( that === value ) {
         adopt( that, REJECTED, new TypeError() );
 
-      } else if ( value instanceof Promise ) {
+      } else if ( value instanceof whif ) {
         if ( value._state === PENDING ) {
           value.then(
             function( value ) {
-              that.resolve( value );
+              that._resolve( value );
             },
             function( reason ) {
               adopt( that, REJECTED, reason );
@@ -137,14 +137,13 @@
 
       } else if ( !isPrimitve( value ) ) {
 
-        var called = false,
-          then;
+        var called = false, then;
 
         try {
           then = value.then;
           if ( isFunction( then ) ) {
             then.call( value, function( value ) {
-              called || that.resolve( value );
+              called || that._resolve( value );
               called = true;
             }, function( reason ) {
               called || adopt( that, REJECTED, reason );
@@ -162,21 +161,21 @@
       return that;
     },
 
-    // Promise#__reject__ ( public ):
+    // __whif#_reject__ ( public ):
     // provide alternative to initial `then` method
     // 
-    reject: function( reason ) {
+    _reject: function( reason ) {
       adopt( REJECTED, reason );
       return this;
     }
-  }
+  };
 
   // __adopt__ ( private ):
   // 
   // - transition this promise from one state to another
   //   and take appropriate actions - delegate to `run()`
   // - allow resolve/reject without value/reason
-  // - be confident `state` will always be one of the defined
+  // - be confident `_state` will always be one of the defined
   // 
   function adopt( promise, state, value ) {
 
@@ -196,7 +195,7 @@
   // - dequeue triples in the order registered, for each:
   //   - call registered resolve/reject handlers dependent on the transition
   //   - reject immediately if an erro is thrown
-  //   - `.resolve()` the returned value
+  //   - `._resolve()` the returned value
   //   
   function run( promise ) {
 
@@ -214,7 +213,7 @@
         try {
           fn = promise._state === RESOLVED ? object.resolve : object.reject;
           value = fn( promise._value );
-          successor.resolve( value );
+          successor._resolve( value );
 
         } catch ( reason ) {
           adopt( successor, REJECTED, reason );
@@ -223,26 +222,26 @@
     }, 0 );
   }
 
-  // Promise.__when__ ( public )
+  // whif.__when__ ( public )
   // 
-  // - group promises and resolve when all are resolved,
+  // - group whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
-  // - `.resolve()` each passed item and proxy its future value
-  //   or the item _as is_ to a newly created Promise which in turn
-  //   resolves/rejects the master Promise
+  // - `._resolve()` each passed item and proxy its future value
+  //   or the item _as is_ to a newly created whif which in turn
+  //   resolves/rejects the master whif
   //   
-  Promise.group = function() {
+  whif.group = function() {
     
     var args = arguments;
 
-    return new Promise( function( resolve, reject ) {
+    return new whif( function( resolve, reject ) {
 
       var args_len = args.length,
         values = Array( args_len );
 
       // the index `i` needs be closured
       array_forEach.call( args, function( value, i ) {
-        var proxy = new Promise();
+        var proxy = new whif();
         proxy.then(
           function( value ) {
             values[ i ] = value;
@@ -254,7 +253,7 @@
             reject( [ reason, i ] );
           }
         );
-        proxy.resolve( value );
+        proxy._resolve( value );
       } )
     } );
   }
@@ -267,24 +266,25 @@
   // - browser - opt to rename
 
   if ( typeof module === str_object && module.exports ) {
-    module.exports = Promise;
+    module.exports = whif;
   } else if ( typeof define === str_function && define.amd ) {
     define( function() {
-      return Promise
+      return whif
     } );
   } else {
 
-    // Promise.__noConflict__ ( public ):
+    // __whif.noConflict__ ( public ):
     // 
-    // restores the previous value assigned to `window.Promise`
-    // and returns the inner reference Promise holds to itself.
+    // restores the previous value assigned to `window.whif`
+    // and returns the inner reference whif holds to itself.
     // 
-    var previous_Promise = root.Promise;
-    Promise.noConflict = function() {
-      root.Promise = previous_Promise;
-      return Promise;
+    var previous_whif = root.whif;
+
+    whif.noConflict = function() {
+      root.whif = previous_whif;
+      return whif;
     }
 
-    root.Promise = Promise;
+    root.whif = whif;
   }
 }( this ) )
