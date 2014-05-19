@@ -56,10 +56,11 @@
   // 
   // - allow to omit the `new` operator
   // - keep private `_state` information
+  // - set whether this promise should be resolved (a-)synchronously
   // - keep track of registered call-/errbacks within `_queue`
   // - pass this' `_resolve` and `_reject` functions to the optional initial `then`
   // 
-  function whif( then ) {
+  function whif( then, sync ) {
 
     var that = this;
 
@@ -67,6 +68,7 @@
 
     that._state = PENDING;
     that._queue = [];
+    that._sync = !!sync;
 
     if ( isFunction( then ) ) {
       then(
@@ -88,10 +90,10 @@
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function( onResolved, onRejected ) {
+    then: function( onResolved, onRejected, sync ) {
 
       var that = this,
-        promise = new whif();
+        promise = new whif( null, sync );
 
       that._queue.push( {
         resolve: isFunction( onResolved ) ? onResolved : id,
@@ -202,7 +204,7 @@
 
     if ( promise._state === PENDING ) return;
 
-    setTimeout( function() {
+    function _run() {
 
       var queue = promise._queue,
         object, successor, value, fn;
@@ -220,7 +222,13 @@
           adopt( successor, REJECTED, reason );
         }
       }
-    }, 0 );
+    }
+
+    if( promise._sync ){
+      _run();
+    } else {
+      setTimeout( _run, 0 );
+    }
   }
 
   // whif.__when__ ( public )
