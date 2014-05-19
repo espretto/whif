@@ -59,7 +59,8 @@
 
   function id( value ) { return value }
   function cancel( error ) { throw error }
-  function isPrimitve( value ){
+
+  function isPrimitive( value ){
     var type = typeof value;
     return value == null || type !== str_object && type !== str_function;
   }
@@ -152,7 +153,7 @@
           adopt( that, value._state, value._value );
         }
 
-      } else if ( !isPrimitve( value ) ) {
+      } else if ( !isPrimitive( value ) ) {
 
         var called = false, then;
 
