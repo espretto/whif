@@ -71,10 +71,9 @@ var syncPromise = whif( function( resolve, reject ){
 }, true ) // `sync` as 2nd argument
 .then( function( number ){
   console.log( number );
-}, null, false ) // `sync` as 3rd argument (  2nd arugment errback defaults )
+}, null, false ) // `sync` as 3rd argument ( 2nd argument errback defaults )
 ```
 the second argument passed to `whif` ( or thrid to `then` ) decides whether to resolve the returned promise synchronously or not ( defaults to false - asynchronously ). in the above example `123` would be logged first, followed by `456`. by default resolution is prolonged until the next runloop hence `123` would be logged last, preceded by `456`.
-[read more][4].
 
 [4]: http://thanpol.as/javascript/promises-a-performance-hits-you-should-be-aware-of
 
