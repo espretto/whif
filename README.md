@@ -23,10 +23,11 @@ var condition = whif( function( resolve, reject ){
   } else {
     reject( she.random() );
   }
-}) // chained
+})
 ```
 success callbacks may return promises ( or any other A+ compliant thenables! ) which's internal state and `value`/`reason` will be adopted by the newly created one returned by `then`. the deferred api is exposed for convenience with both methods prefixed by an underscore to indicate privacy. however, calling `_resolve` or `_reject` on a once resolved or rejected promise will have no effect. both `callback` and `errback` are optional arguments to `then`. their default behavior is to proxy the `value`/`reason` from the previous to the next promise in the chain.
 ```js
+// continue chain
 .then( function( number ){ // callback
 
   var call = new whif();
@@ -41,13 +42,11 @@ success callbacks may return promises ( or any other A+ compliant thenables! ) w
   }, she.patience );
 
   return call;
-}
-// default errback passes rejection to the next promise in the chain
-// , function( reason ){ throw reason }
-) // chained
+} /*, errback=function( e ){ throw e } */)
 ```
-returning the inital `condition` will lead to an endless recursive chain of callbacks which is the right behaviour - following the spec. the _errback_ here will receive its `reason` argument from either the rejection above or the `rebuff` exception rethrown within the callback i.e. he will go after her being busy or the rebuff.
+returning the inital `condition` will lead to an endless recursive chain of callbacks which is the right behaviour - following the spec. the _errback_ here will receive its `reason` argument from either the proxied rejection above or the `rebuff` exception rethrown within the callback i.e. he will go after her being busy or the rebuff.
 ```js
+// continue chain
 .then( function( date ){ // callback
 
   if( typeof date === 'undefined' )
@@ -63,39 +62,44 @@ returning the inital `condition` will lead to an endless recursive chain of call
   him.goAfter( reason );
 });
 ```
-one rather special yet easy implemented feature is to not resolve promises asynchronously as requried by the spec. if synchronous resolution is an option at all, this will improve performance, especially on the server-side. [read more][4]
+one rather special yet easy implemented feature is to not resolve promises asynchronously as requried by the spec. if synchronous promise resolution is an option at all to the specific control-flow, this will improve performance, especially on the server-side. [read more][4]
 ```js
 var syncPromise = whif( function( resolve, reject ){
   resolve( 123 );
-  console.log( 456 )
+  console.log( 456 );
 }, true ) // `sync` as 2nd argument
-.then( function( number ){
-  console.log( number );
-}, null, false ) // `sync` as 3rd argument ( 2nd argument errback defaults )
+
+syncPromise.then(
+  function( number ){
+    console.log( number );
+  }
+  null,
+  // sync=false
+);
 ```
-the second argument passed to `whif` ( or thrid to `then` ) decides whether to resolve the returned promise synchronously or not ( defaults to false - asynchronously ). in the above example `123` would be logged first, followed by `456`. by default resolution is prolonged until the next runloop hence `123` would be logged last, preceded by `456`.
+the second argument passed to `whif` ( or third to `then` instead of the more common _progressHandler_ ) decides whether to resolve the returned promise synchronously or not ( defaults to false - asynchronously ). in the above example `123` would be logged first, followed by `456`. by default resolution is prolonged until the next runloop cycle hence `123` would be logged last, preceded by `456`.
 
 [4]: http://thanpol.as/javascript/promises-a-performance-hits-you-should-be-aware-of
 
-another very usefull feature is to group promises to a single one which will only be resolved if every sub-promise is resolved and rejected as soon as one of them fails.
+another very usefull feature is to group promises to a single one which will only be resolved if every sub-promise is resolved or rejected as soon as one of them fails.
 ```js
 var requirements = [
   
-  // if is not thenable, a promise is created to be resolved with the value
+  // if it's not thenable, a promise is created to be resolved with the value
   'non-thenable',
   
-  // any A+ 1.1 compliant thenable, jQuery works in this case
+  // any A+ 1.1 compliant thenable, jQuery ( > 1.5 ) works in this case
   jQuery.get('http://url.to/some/resource.json'),
   
   // own promises
-  new whif( function( resolve, reject ){
+  whif( function( resolve, reject ){
     var n = Math.random();
     if( n < 0.5 ) resolve( 'lucky' );
     else reject( 'unlucky' );
   })
 ];
 
-whif.group( requirements ).then(
+whif.group( requirements /*, sync=false */ ).then(
   function( values ){
     
     // in case every promise was resolved

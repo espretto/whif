@@ -258,10 +258,8 @@
   //   or the item _as is_ to a newly created whif which in turn
   //   resolves/rejects the master whif
   //   
-  whif.group = function() {
+  whif.group = function( args, sync ) {
     
-    var args = arguments;
-
     return new whif( function( resolve, reject ) {
 
       var args_len = args.length,
@@ -269,7 +267,7 @@
 
       // the index `i` needs be closured
       array_forEach.call( args, function( value, i ) {
-        var proxy = new whif();
+        var proxy = new whif( null, sync );
         proxy.then(
           function( value ) {
             values[ i ] = value;
@@ -283,7 +281,7 @@
         );
         proxy._resolve( value );
       } )
-    } );
+    }, sync );
   }
 
   // export
