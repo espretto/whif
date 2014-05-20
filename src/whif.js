@@ -37,21 +37,6 @@
       }
     );
   }() ),
-
-  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
-  nextTick = ( function(){
-    
-    var nextTick = typeof process === str_object && process.nextTick,
-      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
-      i = prefixes.length;
-
-    while( i-- && !isFunction( nextTick ) ){
-      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
-    }
-
-    return nextTick || root.setImmediate || setTimeout;
-
-  }() ),
   
   array_forEach = [].forEach || function( iter ) {
     for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
@@ -243,11 +228,29 @@
     if( promise._sync ){
       _run();
     } else {
-      nextTick( _run );
+      whif.nextTick( _run );
     }
   }
 
-  // whif.__when__ ( public )
+  // __whif.nextTick__ ( public )
+  // 
+  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
+  // 
+  whif.nextTick = ( function(){
+    
+    var nextTick = typeof process === str_object && process.nextTick,
+      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
+      i = prefixes.length;
+
+    while( i-- && !isFunction( nextTick ) ){
+      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
+    }
+
+    return nextTick || root.setImmediate || setTimeout;
+
+  }() );
+
+  // __whif.when__ ( public )
   // 
   // - group whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
