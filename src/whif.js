@@ -65,7 +65,7 @@
 
     var that = this;
 
-    if ( !( that instanceof whif ) ) return new whif( then );
+    if ( !( that instanceof whif ) ) return new whif( then, sync );
 
     that._state = PENDING;
     that._queue = [];
