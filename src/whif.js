@@ -1,3 +1,9 @@
+
+/*!
+ * whif javascript library released under MIT licence
+ * http://mariusrunge.com/mit-licence.html
+ */
+
 ( function( root ) {
 
   // baseline setup

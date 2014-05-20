@@ -7541,6 +7541,12 @@ if (typeof module !== 'undefined' && module.exports) {
 
 },{}],39:[function(require,module,exports){
 (function (process){
+
+/*!
+ * whif javascript library released under MIT licence
+ * http://mariusrunge.com/mit-licence.html
+ */
+
 ( function( root ) {
 
   // baseline setup
@@ -7580,21 +7586,6 @@ if (typeof module !== 'undefined' && module.exports) {
       }
     );
   }() ),
-
-  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
-  nextTick = ( function(){
-    
-    var nextTick = typeof process === str_object && process.nextTick,
-      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
-      i = prefixes.length;
-
-    while( i-- && !isFunction( nextTick ) ){
-      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
-    }
-
-    return nextTick || root.setImmediate || setTimeout;
-
-  }() ),
   
   array_forEach = [].forEach || function( iter ) {
     for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
@@ -7602,7 +7593,8 @@ if (typeof module !== 'undefined' && module.exports) {
 
   function id( value ) { return value }
   function cancel( error ) { throw error }
-  function isPrimitve( value ){
+
+  function isPrimitive( value ){
     var type = typeof value;
     return value == null || type !== str_object && type !== str_function;
   }
@@ -7622,7 +7614,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
     var that = this;
 
-    if ( !( that instanceof whif ) ) return new whif( then );
+    if ( !( that instanceof whif ) ) return new whif( then, sync );
 
     that._state = PENDING;
     that._queue = [];
@@ -7695,7 +7687,7 @@ if (typeof module !== 'undefined' && module.exports) {
           adopt( that, value._state, value._value );
         }
 
-      } else if ( !isPrimitve( value ) ) {
+      } else if ( !isPrimitive( value ) ) {
 
         var called = false, then;
 
@@ -7785,11 +7777,29 @@ if (typeof module !== 'undefined' && module.exports) {
     if( promise._sync ){
       _run();
     } else {
-      nextTick( _run );
+      whif.nextTick( _run );
     }
   }
 
-  // whif.__when__ ( public )
+  // __whif.nextTick__ ( public )
+  // 
+  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
+  // 
+  whif.nextTick = ( function(){
+    
+    var nextTick = typeof process === str_object && process.nextTick,
+      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
+      i = prefixes.length;
+
+    while( !isFunction( nextTick ) && i-- ){
+      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
+    }
+
+    return nextTick || root.setImmediate || setTimeout;
+
+  }() );
+
+  // __whif.when__ ( public )
   // 
   // - group whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
@@ -7797,10 +7807,8 @@ if (typeof module !== 'undefined' && module.exports) {
   //   or the item _as is_ to a newly created whif which in turn
   //   resolves/rejects the master whif
   //   
-  whif.group = function() {
+  whif.group = function( args, sync ) {
     
-    var args = arguments;
-
     return new whif( function( resolve, reject ) {
 
       var args_len = args.length,
@@ -7808,7 +7816,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
       // the index `i` needs be closured
       array_forEach.call( args, function( value, i ) {
-        var proxy = new whif();
+        var proxy = new whif( null, sync );
         proxy.then(
           function( value ) {
             values[ i ] = value;
@@ -7822,7 +7830,7 @@ if (typeof module !== 'undefined' && module.exports) {
         );
         proxy._resolve( value );
       } )
-    } );
+    }, sync );
   }
 
   // export

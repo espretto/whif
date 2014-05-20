@@ -153,3 +153,7 @@ in your browser ( requires `grunt build` )
 $ python -m SimpleHTTPServer
 ```
 then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](localhost:8000/docs/src/whif.js.html) to read Promise's story - the annotated source.
+
+licence
+-------
+[MIT](http://mariusrunge.com/mit-licence.html)
