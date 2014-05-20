@@ -242,7 +242,7 @@
       prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
       i = prefixes.length;
 
-    while( i-- && !isFunction( nextTick ) ){
+    while( !isFunction( nextTick ) && i-- ){
       nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
     }
 
