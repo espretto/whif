@@ -241,10 +241,16 @@
   // __whif.nextTick__ ( public )
   // 
   // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
+  // - try `process.nextTick`
+  // - fall back on `requestAnimationFrame` and all its vendor prefixes
+  // - make sure the above are called in the context of their owner object
+  // - fallback on `setImmediate`
+  // - fallback on `setTimeout`
   // 
   whif.nextTick = ( function(){
     
-    var nextTick = typeof process === str_object && process.nextTick,
+    var owner = typeof process === str_object ? process : root,
+      nextTick = owner.nextTick,
       prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
       i = prefixes.length;
 
@@ -252,7 +258,11 @@
       nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
     }
 
-    return nextTick || root.setImmediate || setTimeout;
+    return (
+      i !== -1
+      ? function(){ nextTick.apply(owner, arguments) }
+      : root.setImmediate || setTimeout
+    );
 
   }() );
 

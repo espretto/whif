@@ -69,13 +69,7 @@ var syncPromise = whif( function( resolve, reject ){
   console.log( 456 );
 }, true ) // `sync` as 2nd argument
 
-syncPromise.then(
-  function( number ){
-    console.log( number );
-  }
-  null,
-  // sync=false
-);
+syncPromise.then( console.log, null /*, sync=false */ );
 ```
 the second argument passed to `whif` ( or third to `then` instead of the more common _progressHandler_ ) decides whether to resolve the returned promise synchronously or not ( defaults to false - asynchronously ). in the above example `123` would be logged first, followed by `456`. by default resolution is prolonged until the next runloop cycle hence `123` would be logged last, preceded by `456`.
 
@@ -133,12 +127,12 @@ $ npm install
 
 ### build
 - generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/whif.min.js` for production environments ( ~1.9 kb )
+- uglifys source to `./dist/whif.min.js` for production environments ( ~2 kb )
 - browserifys test bundle to `./test/whif.test.bundle.js`
 ```sh
 $ grunt build
 ```
-for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` ( ~0.9 kb )
+for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` ( ~1 kb )
 ```sh
 $ npm run-script gzip
 ```
@@ -152,7 +146,7 @@ in your browser ( requires `grunt build` )
 ```sh
 $ python -m SimpleHTTPServer
 ```
-then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](localhost:8000/docs/src/whif.js.html) to read Promise's story - the annotated source.
+then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](http://localhost:8000/docs/src/whif.js.html) to read Promise's story - the annotated source.
 
 licence
 -------
