@@ -201,32 +201,34 @@
   //   
   function run( promise ) {
 
-    if ( promise._state === PENDING ) return;
-
     function _run() {
 
       var queue = promise._queue,
-        object, successor, value, fn;
+        object, successor, value;
 
       while ( queue.length ) {
         object = queue.shift();
         successor = object.promise;
 
         try {
-          fn = promise._state === RESOLVED ? object.resolve : object.reject;
-          value = fn( promise._value );
-          successor._resolve( value );
-
+          value = (
+            promise._state === RESOLVED
+            ? object.resolve
+            : object.reject
+          )( promise._value );
         } catch ( reason ) {
           adopt( successor, REJECTED, reason );
         }
+        successor._resolve( value );
       }
     }
 
-    if( promise._sync ){
-      _run();
-    } else {
-      whif.nextTick( _run );
+    if ( promise._state !== PENDING ){
+      if( promise._sync ){
+        _run();
+      } else {
+        whif.nextTick( _run );
+      }
     }
   }
 
