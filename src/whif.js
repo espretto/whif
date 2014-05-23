@@ -125,48 +125,40 @@
     // 
     _resolve: function( value ) {
 
-      var that = this;
+      var that = this,
+        called = false;
 
-      if ( that === value ) {
-        adopt( that, REJECTED, new TypeError() );
+      function onResolved( value ){
+        called || ( called = true, that._resolve( value ) );
+      }
 
-      } else if ( value instanceof whif ) {
-        if ( value._state === PENDING ) {
-          value.then(
-            function( value ) {
-              that._resolve( value );
-            },
-            function( reason ) {
-              adopt( that, REJECTED, reason );
-            }
-          );
+      function onRejected( reason ){
+        called || ( called = true, adopt( that, REJECTED, reason ) );
+      }
+
+      if( that === value ){
+        onRejected( new TypeError );
+      } else if( isPrimitive( value ) ) {
+        adopt( that, RESOLVED, value );
+      } else if( value instanceof whif ){
+        if( value._state === PENDING ){
+          value.then( onResolved, onRejected );
         } else {
-          adopt( that, value._state, value._value );
+          adopt( that, value._state, value._value );  
         }
-
-      } else if ( !isPrimitive( value ) ) {
-
-        var called = false, then;
-
-        try {
-          then = value.then;
-          if ( isFunction( then ) ) {
-            then.call( value, function( value ) {
-              called || that._resolve( value );
-              called = true;
-            }, function( reason ) {
-              called || adopt( that, REJECTED, reason );
-              called = true;
-            } );
+      } else {
+        try{
+          var then = value.then;
+          if( isFunction( then ) ){
+            then.call( value, onResolved, onRejected );
           } else {
             adopt( that, RESOLVED, value );
           }
-        } catch ( reason ) {
-          called || adopt( that, REJECTED, reason );
+        } catch ( reason ){
+          onRejected( reason );
         }
-      } else {
-        adopt( that, RESOLVED, value );
       }
+
       return that;
     },
 
@@ -251,19 +243,13 @@
     
     var owner = typeof process === str_object ? process : root,
       nextTick = owner.nextTick,
-      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' ),
-      i = prefixes.length;
+      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' );
 
-    while( !isFunction( nextTick ) && i-- ){
-      nextTick = root[ prefixes[ i ] + 'equestAnimationFrame' ];
+    while( !isFunction( nextTick ) && prefixes.length ){
+      nextTick = root[ prefixes.pop() + 'equestAnimationFrame' ];
     }
 
-    return (
-      i !== -1
-      ? function(){ nextTick.apply(owner, arguments) }
-      : root.setImmediate || setTimeout
-    );
-
+    return nextTick ? function(){ return nextTick.apply( owner, arguments ) } : root.setImmediate || setTimeout;
   }() );
 
   // __whif.when__ ( public )
@@ -279,24 +265,37 @@
     return new whif( function( resolve, reject ) {
 
       var args_len = args.length,
-        values = Array( args_len );
+        values = new Array( args_len );
 
       // the index `i` needs be closured
       array_forEach.call( args, function( value, i ) {
-        var proxy = new whif( null, sync );
-        proxy.then(
-          function( value ) {
-            values[ i ] = value;
-            if ( !--args_len ) {
-              resolve( values );
-            }
-          },
-          function( reason ) {
-            reject( [ reason, i ] );
+
+        function res( value ) {
+          values[ i ] = value;
+          if ( !--args_len ) {
+            resolve( values );
           }
-        );
-        proxy._resolve( value );
-      } )
+        }
+
+        function rej( reason ) {
+          reject( [ reason, i ] );
+        }
+
+        if( isPrimitive( value ) ){
+          res( value );
+        } else {
+          try{
+            var then = value.then;
+            if( isFunction( then ) ){
+              then.call( value, res, rej );
+            } else {
+              res( value );
+            }
+          } catch( reason ){
+            rej( reason );
+          }
+        }
+      })
     }, sync );
   }
 

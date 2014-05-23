@@ -17,3 +17,6 @@ node_modules
 # own
 docs
 dist
+
+# browserified
+test/whift.test.bundle.js
