@@ -7557,9 +7557,9 @@ if (typeof module !== 'undefined' && module.exports) {
   // whif states
   // -----------
 
-  PENDING = -1,
-  REJECTED = 0,
-  RESOLVED = 1,
+  PENDING = 1,
+  REJECTED = 2,
+  RESOLVED = 4,
 
   // well known strings
   // ------------------
@@ -7684,7 +7684,7 @@ if (typeof module !== 'undefined' && module.exports) {
       } else if( isPrimitive( value ) ) {
         adopt( that, RESOLVED, value );
       } else if( value instanceof whif ){
-        if( value._state === PENDING ){
+        if( value._state & PENDING ){
           value.then( onResolved, onRejected );
         } else {
           adopt( that, value._state, value._value );  
@@ -7709,9 +7709,8 @@ if (typeof module !== 'undefined' && module.exports) {
     // provide alternative to initial `then` method
     // 
     _reject: function( reason ) {
-      var that = this;
-      adopt( that, REJECTED, reason );
-      return that;
+      adopt( this, REJECTED, reason );
+      return this;
     }
   };
 
@@ -7726,7 +7725,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
     var _state = promise._state;
 
-    if ( _state !== state && _state === PENDING ) {
+    if ( ( _state ^ state ) && ( _state & PENDING) ) {
       promise._state = state;
       promise._value = value;
       run( promise );
@@ -7746,27 +7745,28 @@ if (typeof module !== 'undefined' && module.exports) {
 
     function _run() {
 
-      var queue = promise._queue,
-        object, successor, value;
+      var queue = promise._queue, object, successor, value;
 
       while ( queue.length ) {
         object = queue.shift();
         successor = object.promise;
 
+        var called = false;
         try {
           value = (
-            promise._state === RESOLVED
+            ( promise._state & RESOLVED )
             ? object.resolve
             : object.reject
           )( promise._value );
         } catch ( reason ) {
+          called = true;
           adopt( successor, REJECTED, reason );
         }
-        successor._resolve( value );
+        called || successor._resolve( value );
       }
     }
 
-    if ( promise._state !== PENDING ){
+    if ( promise._state ^ PENDING ){
       if( promise._sync ){
         _run();
       } else {

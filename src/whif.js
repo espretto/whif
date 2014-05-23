@@ -182,7 +182,7 @@
 
     var _state = promise._state;
 
-    if ( _state !== state && _state === PENDING ) {
+    if ( _state ^ state && _state & PENDING ) {
       promise._state = state;
       promise._value = value;
       run( promise );
@@ -211,7 +211,7 @@
         var called = false;
         try {
           value = (
-            ( promise._state & RESOLVED )
+            promise._state & RESOLVED
             ? object.resolve
             : object.reject
           )( promise._value );
