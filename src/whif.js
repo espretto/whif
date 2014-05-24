@@ -42,12 +42,8 @@
         return value && typeof value === str_function
       }
     );
-  }() ),
+  }() );
   
-  array_forEach = [].forEach || function( iter ) {
-    for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
-  };
-
   function id( value ) { return value }
   function cancel( error ) { throw error }
 
@@ -266,38 +262,41 @@
     
     return new whif( function( resolve, reject ) {
 
-      var args_len = args.length,
+      var i = args.length,
+        args_len = i,
         values = new Array( args_len );
 
-      // the index `i` needs be closured
-      array_forEach.call( args, function( value, i ) {
+      while(i--){ // inlined Array#forEach to closure index `i`
+        (function(value, i){
 
-        function res( value ) {
-          values[ i ] = value;
-          if ( !--args_len ) {
-            resolve( values );
-          }
-        }
-
-        function rej( reason ) {
-          reject( [ reason, i ] );
-        }
-
-        if( isPrimitive( value ) ){
-          res( value );
-        } else {
-          try{
-            var then = value.then;
-            if( isFunction( then ) ){
-              then.call( value, res, rej );
-            } else {
-              res( value );
+          function res( value ) {
+            values[ i ] = value;
+            if ( !--args_len ) {
+              resolve( values );
             }
-          } catch( reason ){
-            rej( reason );
           }
-        }
-      })
+
+          function rej( reason ) {
+            reject( [ reason, i ] );
+          }
+
+          if( isPrimitive( value ) ){
+            res( value );
+          } else {
+            try{
+              var then = value.then;
+              if( isFunction( then ) ){
+                then.call( value, res, rej );
+              } else {
+                res( value );
+              }
+            } catch( reason ){
+              rej( reason );
+            }
+          }
+          
+        }(args[i], i))
+      }
     }, sync );
   }
 
