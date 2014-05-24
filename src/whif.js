@@ -247,7 +247,11 @@
       nextTick = root[ prefixes.pop() + 'equestAnimationFrame' ];
     }
 
-    return nextTick ? function(){ return nextTick.apply( owner, arguments ) } : root.setImmediate || setTimeout;
+    nextTick = nextTick || root.setImmediate || setTimeout;
+
+    return function(){
+      return nextTick.apply( owner, arguments )
+    }
   }() );
 
   // __whif.when__ ( public )
