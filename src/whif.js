@@ -23,23 +23,23 @@
 
   str_object = 'object',
   str_function = 'function',
+  str_prototype = 'prototype',
 
   // helper functions
   // ----------------
 
   isFunction = ( function() {
 
-    var object = {},
-      object_toString = object.toString,
+    var object_toString = Object[str_prototype].toString,
       repr_function = '[object Function]';
 
     return ( // fix old webkit bug
-      typeof /re/ === str_function
+      typeof /r/ === str_function
       ? function( value ) {
-        return value && object_toString.call( value ) === repr_function
+        return object_toString.call( value ) === repr_function;
       }
       : function( value ) {
-        return value && typeof value === str_function
+        return typeof value === str_function;
       }
     );
   }() );
@@ -48,8 +48,11 @@
   function cancel( error ) { throw error }
 
   function isPrimitive( value ){
-    var type = typeof value;
-    return value == null || type !== str_object && type !== str_function;
+    return ( // re-/abuse variable `value` as its type
+      value == null ||
+      ( value = typeof value ) !== str_object &&
+      value !== str_function
+    );
   }
 
   // whif module
@@ -85,7 +88,7 @@
     }
   };
 
-  whif.prototype = {
+  whif[str_prototype] = {
 
     // __whif#then__ ( public ):
     // 

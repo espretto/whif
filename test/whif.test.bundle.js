@@ -7566,31 +7566,27 @@ if (typeof module !== 'undefined' && module.exports) {
 
   str_object = 'object',
   str_function = 'function',
+  str_prototype = 'prototype',
 
   // helper functions
   // ----------------
 
   isFunction = ( function() {
 
-    var object = {},
-      object_toString = object.toString,
+    var object_toString = Object[str_prototype].toString,
       repr_function = '[object Function]';
 
     return ( // fix old webkit bug
-      typeof /re/ === str_function
+      typeof /r/ === str_function
       ? function( value ) {
-        return value && object_toString.call( value ) === repr_function
+        return object_toString.call( value ) === repr_function;
       }
       : function( value ) {
-        return value && typeof value === str_function
+        return typeof value === str_function;
       }
     );
   }() );
   
-  // array_forEach = [].forEach || function( iter ) {
-  //   for ( var array = this, i = array.length; i--; iter( array[ i ], i, array ) );
-  // };
-
   function id( value ) { return value }
   function cancel( error ) { throw error }
 
@@ -7632,7 +7628,7 @@ if (typeof module !== 'undefined' && module.exports) {
     }
   };
 
-  whif.prototype = {
+  whif[str_prototype] = {
 
     // __whif#then__ ( public ):
     // 
@@ -7794,7 +7790,11 @@ if (typeof module !== 'undefined' && module.exports) {
       nextTick = root[ prefixes.pop() + 'equestAnimationFrame' ];
     }
 
-    return nextTick ? function(){ return nextTick.apply( owner, arguments ) } : root.setImmediate || setTimeout;
+    nextTick = nextTick || root.setImmediate || setTimeout;
+
+    return function(){
+      return nextTick.apply( owner, arguments )
+    }
   }() );
 
   // __whif.when__ ( public )
