@@ -1,51 +1,34 @@
-module.exports = function( grunt ) {
-  
-  var 
+module.exports = function (grunt) {
 
-  DOCS_OUT = 'docs',
-  DOCS_IN = [
-    'README.md',
-    'src/whif.js'
-  ];
+  var docs_out = 'docs',
+    docs_in = [
+      'README.md',
+      'src/whif.js'
+    ],
+    task_libs = [
+      'grunt-contrib-clean',
+      'grunt-contrib-uglify',
+      'grunt-contrib-jshint',
+      'grunt-browserify',
+      'grunt-docker',
+    ];
 
-  grunt.initConfig( {
+  grunt.initConfig({
 
     clean: {
       docs: {
-        src: DOCS_OUT,
+        src: docs_out,
       }
     },
 
     docker: {
       app: {
         expand: true,
-        src: DOCS_IN,
-        dest: DOCS_OUT,
+        src: docs_in,
+        dest: docs_out,
         options: {
           onlyUpdated: false,
           colourScheme: 'tango',
-
-          // 'autumn'
-          // 'borland'
-          // 'bw'
-          // 'colorful'
-          // 'default'
-          // 'emacs'
-          // 'friendly'
-          // 'fruity'
-          // 'manni'
-          // 'monokai'
-          // 'murphy'
-          // 'native'
-          // 'pastie'
-          // 'perldoc'
-          // 'rrt'
-          // 'tango'
-          // 'trac'
-          // 'vim'
-          // 'vs'
-
-
           ignoreHidden: false,
           sidebarState: true,
           exclude: [],
@@ -81,27 +64,27 @@ module.exports = function( grunt ) {
           'test/whif.test.bundle.js': 'test/whif.test.js'
         }
       }
+    },
+
+    jshint: {
+      options: {
+        jshintrc: './.jshintrc'
+      },
+      all: ['Gruntfile.js', 'test/whif.test.js', 'src/whif.js']
     }
 
-  } );
+  });
 
-  // task libs
-  [
-    'grunt-contrib-clean',
-    'grunt-contrib-uglify',
-    'grunt-browserify',
-    'grunt-docker',
-  ].forEach( grunt.loadNpmTasks, grunt );
+  task_libs.forEach(grunt.loadNpmTasks, grunt);
 
-  // task definitions
-  grunt.registerTask( 'build:docs', [
-    'clean:docs',
+  grunt.registerTask('docs', [
+    'clean',
     'docker'
   ]);
 
-  grunt.registerTask( 'build', [
-    'build:docs',
-    'browserify',
-    'uglify'
+  grunt.registerTask('default', [
+    'jshint',
+    'uglify',
+    'browserify'
   ]);
-}
+};

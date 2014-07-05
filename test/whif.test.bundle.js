@@ -7541,13 +7541,12 @@ if (typeof module !== 'undefined' && module.exports) {
 
 },{}],39:[function(require,module,exports){
 (function (process){
-
 /*!
  * whif javascript library released under MIT licence
  * http://mariusrunge.com/mit-licence.html
  */
 
-( function( root ) {
+(function (root) {
 
   // baseline setup
   // ==============
@@ -7557,48 +7556,60 @@ if (typeof module !== 'undefined' && module.exports) {
   // whif states
   // -----------
 
-  PENDING = 1,
-  REJECTED = 2,
-  RESOLVED = 4,
+  PENDING = -1,
+  REJECTED = 0,
+  RESOLVED = 1,
 
   // well known strings
   // ------------------
 
   str_object = 'object',
   str_function = 'function',
-  str_prototype = 'prototype',
+  repr_function = '[object Function]',
 
   // helper functions
   // ----------------
 
-  isFunction = ( function() {
+  object_toString = ({}).toString,
 
-    var object_toString = Object[str_prototype].toString,
-      repr_function = '[object Function]';
-
-    return ( // fix old webkit bug
-      typeof /r/ === str_function
-      ? function( value ) {
-        return object_toString.call( value ) === repr_function;
+  array_forEach = [].forEach || function(iter, ctx){
+    var array = this, len, i;
+    if(array == null){
+      throw new TypeError('can\'t convert ' + array + ' to object');
+    }
+    array = Object(array);
+    len = array.length >>> 0;
+    for(; i < len; i++){
+      if(i in array){
+        if(iter.call(ctx, array[i], i, array) === false){
+          break;
+        }
       }
-      : function( value ) {
-        return typeof value === str_function;
-      }
-    );
-  }() );
-  
-  function id( value ) { return value }
-  function cancel( error ) { throw error }
+    }
+  };
 
-  function isPrimitive( value ){
+  function id(value) {
+    return value;
+  }
+
+  function cancel(error) {
+    throw error;
+  }
+
+  function isPrimitive(value) {
     var type = typeof value;
     return value == null || type !== str_object && type !== str_function;
+  }
+
+  // avoid old webkit bug where `typeof /re/ === 'function'` yields true.
+  function isFunction(value){
+    return object_toString.call(value) === repr_function;
   }
 
   // whif module
   // ===========
 
-  // __whif#constructor__ ( pubic ):
+  // __whif#constructor__ (pubic):
   // 
   // - allow to omit the `new` operator
   // - keep private `_state` information
@@ -7606,55 +7617,51 @@ if (typeof module !== 'undefined' && module.exports) {
   // - keep track of registered call-/errbacks within `_queue`
   // - pass this' `_resolve` and `_reject` functions to the optional initial `then`
   // 
-  function whif( then, sync ) {
+  function whif(then) {
 
     var that = this;
 
-    if ( !( that instanceof whif ) ) return new whif( then, sync );
+    if (!(that instanceof whif)) return new whif(then);
 
     that._state = PENDING;
     that._queue = [];
-    that._sync = !!sync;
+    that._sync = false;
 
-    if ( isFunction( then ) ) {
+    if (isFunction(then)) {
       then(
-        function( value ) {
-          that._resolve( value );
-        },
-        function( reason ) {
-          adopt( that, REJECTED, reason );
-        }
+        function (value) { that._resolve(value); },
+        function (reason) { adopt(that, REJECTED, reason); }
       );
     }
-  };
+  }
 
-  whif[str_prototype] = {
+  whif.prototype = {
 
-    // __whif#then__ ( public ):
+    // __whif#then__ (public):
     // 
     // - create a new promise as required to be returned
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function( onResolved, onRejected, sync ) {
+    then: function (onResolved, onRejected) {
 
       var that = this,
-        promise = new whif( null, sync );
+        promise = new whif();
 
-      that._queue.push( {
-        resolve: isFunction( onResolved ) ? onResolved : id,
-        reject: isFunction( onRejected ) ? onRejected : cancel,
+      that._queue.push({
+        resolve: isFunction(onResolved) ? onResolved : id,
+        reject: isFunction(onRejected) ? onRejected : cancel,
         promise: promise
-      } );
+      });
 
-      run( that );
+      run(that);
 
       return promise;
     },
 
-    // __whif#_resolve__ ( public ):
+    // __whif#_resolve__ (public):
     // 
-    // - if this is to be resolved with itself - throw
+    // - if this is to be resolved with itself - throw an error
     // - if `value` is another one of ours adopt its `_state` if it
     //   is no longer `PENDING` or else prolong state adoption with `.then()`.
     // - if `value` is neither none nor primitive and is
@@ -7662,73 +7669,80 @@ if (typeof module !== 'undefined' && module.exports) {
     //   register this whif as `value`'s successor.
     // - resolve/reject this whif with `value` value otherwise
     // 
-    _resolve: function( value ) {
+    _resolve: function (value) {
 
       var that = this,
-        called = false;
+        called = false,
+        then;
 
-      function onResolved( value ){
-        called || ( called = true, that._resolve( value ) );
+      function onResolved(value) {
+        if (!called) {
+          called = true;
+          that._resolve(value);
+        }
       }
 
-      function onRejected( reason ){
-        called || ( called = true, adopt( that, REJECTED, reason ) );
+      function onRejected(reason) {
+        if (!called) {
+          called = true;
+          adopt(that, REJECTED, reason);
+        }
       }
 
-      if( that === value ){
-        onRejected( new TypeError );
-      } else if( isPrimitive( value ) ) {
-        adopt( that, RESOLVED, value );
-      } else if( value instanceof whif ){
-        if( value._state & PENDING ){
-          value.then( onResolved, onRejected );
+      if (that === value) {
+        onRejected(new TypeError());
+      } else if (isPrimitive(value)) {
+        adopt(that, RESOLVED, value);
+      } else if (value instanceof whif) {
+        if (value._state === PENDING) {
+          value.then(onResolved, onRejected);
         } else {
-          adopt( that, value._state, value._value );  
+          adopt(that, value._state, value._value);
         }
       } else {
-        try{
-          var then = value.then;
-          if( isFunction( then ) ){
-            then.call( value, onResolved, onRejected );
+        try {
+          then = value.then;
+          if (isFunction(then)) {
+            then.call(value, onResolved, onRejected);
           } else {
-            adopt( that, RESOLVED, value );
+            adopt(that, RESOLVED, value);
           }
-        } catch ( reason ){
-          onRejected( reason );
+        } catch (reason) {
+          onRejected(reason);
         }
       }
 
       return that;
     },
 
-    // __whif#_reject__ ( public ):
+    // __whif#_reject__ (public):
     // provide alternative to initial `then` method
     // 
-    _reject: function( reason ) {
-      adopt( this, REJECTED, reason );
+    _reject: function (reason) {
+      adopt(this, REJECTED, reason);
       return this;
     }
   };
 
-  // __adopt__ ( private ):
+  // __adopt__ (private):
   // 
   // - transition this promise from one state to another
   //   and take appropriate actions - delegate to `run()`
   // - allow resolve/reject without value/reason
   // - be confident `_state` will always be one of the defined
   // 
-  function adopt( promise, state, value ) {
+  function adopt(promise, state, value) {
 
     var _state = promise._state;
 
-    if ( _state ^ state && _state & PENDING ) {
+    if (_state !== state && _state === PENDING) {
       promise._state = state;
       promise._value = value;
-      run( promise );
+      run(promise);
     }
   }
 
-  // __run__ ( private ):
+  // __run__ (private):
   // 
   // - if still `PENDING` return
   // - flush callstack and await next tick
@@ -7737,41 +7751,40 @@ if (typeof module !== 'undefined' && module.exports) {
   //   - reject immediately if an erro is thrown
   //   - `._resolve()` the returned value
   //   
-  function run( promise ) {
+  function run(promise) {
 
     function _run() {
 
-      var queue = promise._queue, object, successor, value;
+      var queue = promise._queue,
+        queue_item, successor, value;
 
-      while ( queue.length ) {
-        object = queue.shift();
-        successor = object.promise;
+      while (queue.length) {
+        queue_item = queue.shift();
+        successor = queue_item.promise;
 
         var called = false;
         try {
           value = (
-            promise._state & RESOLVED
-            ? object.resolve
-            : object.reject
-          )( promise._value );
-        } catch ( reason ) {
+            promise._state === RESOLVED ?
+            queue_item.resolve :
+            queue_item.reject
+          )(promise._value);
+        } catch (reason) {
           called = true;
-          adopt( successor, REJECTED, reason );
+          adopt(successor, REJECTED, reason);
         }
-        called || successor._resolve( value );
+        if(!called){
+          successor._resolve(value);
+        }
       }
     }
 
-    if ( promise._state ^ PENDING ){
-      if( promise._sync ){
-        _run();
-      } else {
-        whif.nextTick( _run );
-      }
+    if (promise._state !== PENDING) {
+      whif.nextTick(_run);
     }
   }
 
-  // __whif.nextTick__ ( public )
+  // __whif.nextTick__ (public)
   // 
   // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
   // - try `process.nextTick`
@@ -7780,24 +7793,24 @@ if (typeof module !== 'undefined' && module.exports) {
   // - fallback on `setImmediate`
   // - fallback on `setTimeout`
   // 
-  whif.nextTick = ( function(){
-    
+  whif.nextTick = (function () {
+
     var owner = typeof process === str_object ? process : root,
       nextTick = owner.nextTick,
-      prefixes = 'webkitR-mozR-msR-oR-r'.split( '-' );
+      prefixes = 'webkitR-mozR-msR-oR-r'.split('-');
 
-    while( !isFunction( nextTick ) && prefixes.length ){
-      nextTick = root[ prefixes.pop() + 'equestAnimationFrame' ];
+    while (!isFunction(nextTick) && prefixes.length) {
+      nextTick = root[prefixes.pop() + 'equestAnimationFrame'];
     }
 
     nextTick = nextTick || root.setImmediate || setTimeout;
 
-    return function(){
-      return nextTick.apply( owner, arguments )
-    }
-  }() );
+    return function () {
+      return nextTick.apply(owner, arguments);
+    };
+  }());
 
-  // __whif.when__ ( public )
+  // __whif.group__ (public)
   // 
   // - group whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
@@ -7805,78 +7818,77 @@ if (typeof module !== 'undefined' && module.exports) {
   //   or the item _as is_ to a newly created whif which in turn
   //   resolves/rejects the master whif
   //   
-  whif.group = function( args, sync ) {
-    
-    return new whif( function( resolve, reject ) {
+  whif.group = function (args) {
 
-      var i = args.length,
-        args_len = i,
-        values = new Array( args_len );
+    return new whif(function (resolve, reject) {
 
-      while(i--){ // inlined Array#forEach to closure index `i`
-        (function(value, i){
+      var args_len = args.length,
+        values = new Array(args_len);
 
-          function res( value ) {
-            values[ i ] = value;
-            if ( !--args_len ) {
-              resolve( values );
+      array_forEach.call(args, function (value, i) {
+
+        function res(value) {
+          values[i] = value;
+          if (!--args_len) {
+            resolve(values);
+          }
+        }
+
+        function rej(reason) {
+          reject(reason);
+        }
+
+        if (isPrimitive(value)) {
+          res(value);
+        } else {
+          // covers instances of `whif`
+          try {
+            var then = value.then;
+            if (isFunction(then)) {
+              then.call(value, res, rej);
+            } else {
+              res(value);
             }
+          } catch (reason) {
+            rej(reason);
           }
-
-          function rej( reason ) {
-            reject( [ reason, i ] );
-          }
-
-          if( isPrimitive( value ) ){
-            res( value );
-          } else {
-            try{
-              var then = value.then;
-              if( isFunction( then ) ){
-                then.call( value, res, rej );
-              } else {
-                res( value );
-              }
-            } catch( reason ){
-              rej( reason );
-            }
-          }
-          
-        }(args[i], i))
-      }
-    }, sync );
-  }
+        }
+      });
+    });
+  };
 
   // export
   // ------
   // 
-  // - nodejs
+  // - cjs
   // - amd - anonymous
   // - browser - opt to rename
+  
+  /* global define */
 
-  if ( typeof module === str_object && module.exports ) {
+  if (typeof module === str_object && module.exports) {
     module.exports = whif;
-  } else if ( typeof define === str_function && define.amd ) {
-    define( function() {
-      return whif
-    } );
+  } else if (typeof define === str_function && define.amd) {
+    define(function () {
+      return whif;
+    });
   } else {
 
-    // __whif.noConflict__ ( public ):
+    // __whif.noConflict__ (public):
     // 
     // restores the previous value assigned to `window.whif`
     // and returns the inner reference whif holds to itself.
     // 
     var previous_whif = root.whif;
 
-    whif.noConflict = function() {
+    whif.noConflict = function () {
       root.whif = previous_whif;
       return whif;
-    }
+    };
 
     root.whif = whif;
   }
-}( this ) )
+}(this));
 }).call(this,require("FWaASH"))
 },{"FWaASH":5}],40:[function(require,module,exports){
 var whif = require( '../src/whif.js' );
@@ -7911,11 +7923,11 @@ module.exports = {
   }
 };
 },{"../src/whif.js":39}],41:[function(require,module,exports){
-
+(function (global){
 // Promises A+ Version 1.1 Tests
 // =============================
 
-adapter = require( './promises-aplus-adapter.js' )
+global.adapter = require('./promises-aplus-adapter.js');
 
 require('../node_modules/promises-aplus-tests/lib/tests/2.1.2.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.1.3.js');
@@ -7930,4 +7942,5 @@ require('../node_modules/promises-aplus-tests/lib/tests/2.3.1.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.3.2.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.3.3.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.3.4.js');
+}).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{"../node_modules/promises-aplus-tests/lib/tests/2.1.2.js":8,"../node_modules/promises-aplus-tests/lib/tests/2.1.3.js":9,"../node_modules/promises-aplus-tests/lib/tests/2.2.1.js":10,"../node_modules/promises-aplus-tests/lib/tests/2.2.2.js":11,"../node_modules/promises-aplus-tests/lib/tests/2.2.3.js":12,"../node_modules/promises-aplus-tests/lib/tests/2.2.4.js":13,"../node_modules/promises-aplus-tests/lib/tests/2.2.5.js":14,"../node_modules/promises-aplus-tests/lib/tests/2.2.6.js":15,"../node_modules/promises-aplus-tests/lib/tests/2.2.7.js":16,"../node_modules/promises-aplus-tests/lib/tests/2.3.1.js":17,"../node_modules/promises-aplus-tests/lib/tests/2.3.2.js":18,"../node_modules/promises-aplus-tests/lib/tests/2.3.3.js":19,"../node_modules/promises-aplus-tests/lib/tests/2.3.4.js":20,"./promises-aplus-adapter.js":40}]},{},[41])

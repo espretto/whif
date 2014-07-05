@@ -16,96 +16,78 @@ usage
 
 call `whif` as a constructor with the `new` operator or use it as a factory method to create a promise. pass in a function to receive the promise's `resolve` and `reject` functions as arguments. this style is recommended because the methods are scoped.
 ```js
-var condition = whif( function( resolve, reject ){
+var condition = whif(function(resolve, reject){
 
-  if( she.likes( him ) ){
-    resolve( she.number );
+  if(she.likes(him)){
+    resolve(she.number);
   } else {
-    reject( she.random() );
+    reject(she.random());
   }
 })
 ```
-success callbacks may return promises ( or any other A+ compliant thenables! ) which's internal state and `value`/`reason` will be adopted by the newly created one returned by `then`. the deferred api is exposed for convenience with both methods prefixed by an underscore to indicate privacy. however, calling `_resolve` or `_reject` on a once resolved or rejected promise will have no effect. both `callback` and `errback` are optional arguments to `then`. their default behavior is to proxy the `value`/`reason` from the previous to the next promise in the chain.
+success callbacks may return promises (or any other A+ compliant thenables!) which's internal state and `value`/`reason` will be adopted by the newly created one returned by `then`. the deferred api is exposed for convenience with both methods prefixed by an underscore to indicate privacy. however, calling `_resolve` or `_reject` on a once resolved or rejected promise will have no effect. both `callback` and `errback` are optional arguments to `then`. their default behavior is to proxy the `value`/`reason` from the previous to the next promise in the chain.
 ```js
 // continue chain
-.then( function( number ){ // callback
+.then(function(number){ // callback
 
   var call = new whif();
 
-  setTimeout( function hesitate(){
-    var date = him.call( number );
-    call._resolve( date );
-  }, him.random() );
+  setTimeout(function hesitate(){
+    var date = him.call(number);
+    call._resolve(date);
+  }, him.random());
 
-  setTimeout( function wait(){
-    call._reject( she.busy );
-  }, she.patience );
+  setTimeout(function wait(){
+    call._reject(she.busy);
+  }, she.patience);
 
   return call;
-} /*, errback=function( e ){ throw e } */)
+} /*, errback=function(e){ throw e; } */)
 ```
 returning the inital `condition` will lead to an endless recursive chain of callbacks which is the right behaviour - following the spec. the _errback_ here will receive its `reason` argument from either the proxied rejection above or the `rebuff` exception rethrown within the callback i.e. he will go after her being busy or the rebuff.
 ```js
 // continue chain
-.then( function( date ){ // callback
+.then(function(date){ // callback
 
-  if( typeof date === 'undefined' )
+  if(typeof date === 'undefined')
     return condition;
   }
 
   try {
-    date.kiss.call( him, she );
-  } catch( rebuff ){
+    date.kiss.call(him, she);
+  } catch(rebuff){
     throw rebuff;
   }
-}, function( reason ){ // errback
-  him.goAfter( reason );
+}, function(reason){ // errback
+  him.goAfter(reason);
 });
 ```
-one rather special yet easy implemented feature is to not resolve promises asynchronously as requried by the spec. if synchronous promise resolution is an option at all to the specific control-flow, this will improve performance, especially on the server-side. [read more][4]
-```js
-var syncPromise = whif( function( resolve, reject ){
-  resolve( 123 );
-  console.log( 456 );
-}, true ) // `sync` as 2nd argument
-
-syncPromise.then( console.log, null /*, sync=false */ );
-```
-the second argument passed to `whif` ( or third to `then` instead of the more common _progressHandler_ ) decides whether to resolve the returned promise synchronously or not ( defaults to false - asynchronously ). in the above example `123` would be logged first, followed by `456`. by default resolution is prolonged until the next runloop cycle hence `123` would be logged last, preceded by `456`.
-
-[4]: http://thanpol.as/javascript/promises-a-performance-hits-you-should-be-aware-of
-
-another very usefull feature is to group promises to a single one which will only be resolved if every sub-promise is resolved or rejected as soon as one of them fails.
+another very usefull feature is to group promises to a single one
+which will only be resolved if every sub-promise is resolved or
+rejected as soon as one of them fails.
 ```js
 var requirements = [
-  
-  // if it's not thenable, a promise is created to be resolved with the value
+  // will be passed as-is
   'non-thenable',
-  
-  // any A+ 1.1 compliant thenable, jQuery ( > 1.5 ) works in this case
+  // any A+ 1.1 compliant thenable, jQuery (> 1.5) works in this case
   jQuery.get('http://url.to/some/resource.json'),
-  
   // own promises
-  whif( function( resolve, reject ){
+  whif(function(resolve, reject){
     var n = Math.random();
-    if( n < 0.5 ) resolve( 'lucky' );
-    else reject( 'unlucky' );
+    if(n < 0.5) resolve('lucky');
+    else reject('unlucky');
   })
 ];
 
-whif.group( requirements /*, sync=false */ ).then(
-  function( values ){
-    
+whif.group(requirements).then(
+  function(values){
     // in case every promise was resolved
     values[ 0 ]; // 'non-thenable'
     values[ 1 ]; // some json data
     values[ 2 ]; // 'lucky'
   },
-  function( tuple ){
-    
+  function(reason){
     // in case we're unlucky
-    var reason = tuple[ 0 ]; // 'unlucky', reason
-    var index  = tuple[ 1 ]; // 2  , index of the promise that was rejected
   }
 );
 ```
@@ -127,12 +109,12 @@ $ npm install
 
 ### build
 - generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/whif.min.js` for production environments ( ~2 kb )
+- uglifys source to `./dist/whif.min.js` for production environments (~2.1 kb)
 - browserifys test bundle to `./test/whif.test.bundle.js`
 ```sh
 $ grunt build
 ```
-for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` ( ~1 kb )
+for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` (~1.1 kb)
 ```sh
 $ npm run-script gzip
 ```
@@ -142,7 +124,7 @@ in nodejs
 ```sh
 $ npm test
 ```
-in your browser ( requires `grunt build` )
+in your browser (requires `grunt build`)
 ```sh
 $ python -m SimpleHTTPServer
 ```

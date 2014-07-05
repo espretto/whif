@@ -1,8 +1,7 @@
-
 // Promises A+ Version 1.1 Tests
 // =============================
 
-adapter = require( './promises-aplus-adapter.js' )
+global.adapter = require('./promises-aplus-adapter.js');
 
 require('../node_modules/promises-aplus-tests/lib/tests/2.1.2.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.1.3.js');
