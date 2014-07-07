@@ -116,6 +116,16 @@
       return promise;
     },
 
+    // __whif#done__ (public):
+    done: function(onResolved){
+      return this.then(onResolved);
+    },
+
+    // __whif#catch__ (public):
+    catch: function(onRejected){
+      return this.then(null, onRejected);
+    },
+
     // __whif#_resolve__ (public):
     // 
     // - if this is to be resolved with itself - throw an error
