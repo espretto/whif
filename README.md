@@ -22,13 +22,11 @@ _resolve | instance | `deferred._resolve(value)` | resolve a yet pending deferre
 reject | static | `whif.reject(reason)` | wrap `reason` in a rejected promise
 _reject | instance | `deferred._reject(value)` | reject a yet pending deferred
 then | instance | `promise.then(res, rej)` | returns the succeeding promise
-done | instance | `promise.done(res)` | `promise.then(res, cancel)`
 catch | instance | `promise.catch(rej)` | `promise.then(id, rej)`
 sync | instance | `promise.sync()` | make promise's resolution synchronous
 nextTick | static | `whif.nextTick(callback)` | shim for `process.nextTick`
 group | static | `whif.group(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
 _init_ | argument | `function(res, rej){..}`
-_cancel_ | argument | `function(e){ throw e; }` | rethrow first argument
 _id_ | argument | `function(v){ return v; }` | return first argument
 _callback_ | argument | `function(){..}`| function to be deferred until the next run-loop
 _thenables_ | argument | `[whif(..), $.ajax(..), 'pass-on']` | array of usually objects with a `then` method, primitives are simply passed on.
