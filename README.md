@@ -60,7 +60,6 @@ the usual suspect (chained to the above)
 ```
 convenience shortcuts
 ```js
-promise.done(function(value){ /* ... */ });
 promise.catch(function(reason){ /* ... */ });
 var resolvedPromise = whif.resolve(value);
 var rejectedPromise = whif.reject(reason);
