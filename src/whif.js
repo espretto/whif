@@ -126,6 +126,11 @@
       return this.then(null, on_rejected);
     },
 
+    sync: function(){
+      this._sync = true;
+      return this;
+    },
+
     // __whif#_resolve__ (public):
     // 
     // - if this is to be resolved with itself - throw an error
@@ -247,9 +252,21 @@
     }
 
     if (promise._state !== PENDING) {
-      whif.nextTick(_run);
+      if(this._sync){
+        _run();
+      } else {
+        whif.nextTick(_run);
+      }
     }
   }
+
+  whif.resolve = function(value){
+    return new whif()._resolve(value);
+  };
+
+  whif.reject = function(reason){
+    return new whif()._reject(reason);
+  };
 
   // __whif.nextTick__ (public)
   // 
@@ -307,8 +324,9 @@
 
         if (is_primitive(value)) {
           res(value);
+        } else if((value instanceof whif) && value._state !== PENDING){
+          (value._state === RESOLVED ? res : rej)(value._value);
         } else {
-          // covers instances of `whif`
           try {
             var then = value.then;
             if (is_function(then)) {

@@ -35,7 +35,7 @@
     "asynchronous"
   ],
   "author": "espretto",
-  "license": "BSD-2-Clause",
+  "license": "http://mariusrunge.com/mit-licence.html",
   "bugs": {
     "url": "https://github.com/espretto/whif/issues"
   },

@@ -11,86 +11,97 @@ many thanks to this lib's originator Rhys Brett-Bowen and his great article on [
 [2]: https://github.com/promises-aplus/promises-tests
 [3]: http://promises-aplus.github.io/promises-spec/
 
+quick reference
+---------------
+
+method | type | signature | description
+--- | --- | --- | ---
+whif | static | `whif(init)` | constructor/factory with optional `init`
+resolve | static | `whif.resolve(value)` | wrap `value` in a resolved promise
+_resolve | instance | `deferred._resolve(value)` | resolve a yet pending deferred
+reject | static | `whif.reject(reason)` | wrap `reason` in a rejected promise
+_reject | instance | `deferred._reject(value)` | reject a yet pending deferred
+then | instance | `promise.then(res, rej)` | returns the succeeding promise
+done | instance | `promise.done(res)` | `promise.then(res, cancel)`
+catch | instance | `promise.catch(rej)` | `promise.then(id, rej)`
+sync | instance | `promise.sync()` | make promise's resolution synchronous
+nextTick | static | `whif.nextTick(callback)` | shim for `process.nextTick`
+group | static | `whif.group(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
+_init_ | argument | `function(res, rej){..}`
+_cancel_ | argument | `function(e){ throw e; }` | rethrow first argument
+_id_ | argument | `function(v){ return v; }` | return first argument
+_callback_ | argument | `function(){..}`| function to be deferred until the next run-loop
+_thenables_ | argument | `[whif(..), $.ajax(..), 'pass-on']` | array of usually objects with a `then` method, primitives are simply passed on.
+
 usage
 -----
 
-call `whif` as a constructor with the `new` operator or use it as a factory method to create a promise. pass in a function to receive the promise's `resolve` and `reject` functions as arguments. this style is recommended because the methods are scoped.
+the `new` operator may be omitted
 ```js
-var condition = whif(function(resolve, reject){
-
-  if(she.likes(him)){
-    resolve(she.number);
-  } else {
-    reject(she.random());
-  }
+var deferred = new whif();
+```
+private deferred api
+```js
+deferred._resolve(value);
+deferred._reject(reason);
+```
+scoped handlers
+```js
+var promise = whif(function(resolve, reject){
+  if(condition) resolve(value);
+  else reject(reason);
 })
 ```
-success callbacks may return promises (or any other A+ compliant thenables!) which's internal state and `value`/`reason` will be adopted by the newly created one returned by `then`. the deferred api is exposed for convenience with both methods prefixed by an underscore to indicate privacy. however, calling `_resolve` or `_reject` on a once resolved or rejected promise will have no effect. both `callback` and `errback` are optional arguments to `then`. their default behavior is to proxy the `value`/`reason` from the previous to the next promise in the chain.
-```js
-// continue chain
-.then(function(number){ // callback
-
-  var call = new whif();
-
-  setTimeout(function hesitate(){
-    var date = him.call(number);
-    call._resolve(date);
-  }, him.random());
-
-  setTimeout(function wait(){
-    call._reject(she.busy);
-  }, she.patience);
-
-  return call;
-} /*, errback=function(e){ throw e; } */)
+the usual suspect (chained to the above)
 ```
-returning the inital `condition` will lead to an endless recursive chain of callbacks which is the right behaviour - following the spec. the _errback_ here will receive its `reason` argument from either the proxied rejection above or the `rebuff` exception rethrown within the callback i.e. he will go after her being busy or the rebuff.
-```js
-// continue chain
-.then(function(date){ // callback
-
-  if(typeof date === 'undefined')
-    return condition;
-  }
-
-  try {
-    date.kiss.call(him, she);
-  } catch(rebuff){
-    throw rebuff;
-  }
-}, function(reason){ // errback
-  him.goAfter(reason);
+.then(function(value){
+  // success
+}, function(reason){
+  // failure
 });
 ```
-another very usefull feature is to group promises to a single one
-which will only be resolved if every sub-promise is resolved or
-rejected as soon as one of them fails.
+convenience shortcuts
 ```js
-var requirements = [
-  // will be passed as-is
-  'non-thenable',
-  // any A+ 1.1 compliant thenable, jQuery (> 1.5) works in this case
-  jQuery.get('http://url.to/some/resource.json'),
-  // own promises
-  whif(function(resolve, reject){
-    var n = Math.random();
-    if(n < 0.5) resolve('lucky');
-    else reject('unlucky');
-  })
-];
-
-whif.group(requirements).then(
-  function(values){
-    // in case every promise was resolved
-    values[ 0 ]; // 'non-thenable'
-    values[ 1 ]; // some json data
-    values[ 2 ]; // 'lucky'
-  },
-  function(reason){
-    // in case we're unlucky
-  }
-);
+promise.done(function(value){ /* ... */ });
+promise.catch(function(reason){ /* ... */ });
+var resolvedPromise = whif.resolve(value);
+var rejectedPromise = whif.reject(reason);
 ```
+grouping promises/concurrent processes
+```js
+whif.group([p, q, true])
+  .done(function(values){
+    var p_value = values[0];
+    var q_value = values[1];
+    var boolean = values[2];
+    throw new Error();
+  })
+  .catch(function(reason){
+    // handler for whichever was rejected first,
+    // not necessarily the error thrown above!
+  });
+```
+whif ships with a [shim for cross-platform/-browser `process.nextTick`](https://gist.github.com/espretto/ec79d6d0fc7a898b92b1) which falls back to (vendor specific) `requestAnimationFrame`, `setImmediate` or `setTimeout`. 
+```js
+whif.nextTick(function(){
+  // executed in the next run-loop
+});
+```
+promises usually resolve/reject their successors asynchronously to ensure consistent behaviour/order of execution since code wrapped in promises may or may not involve asynchronous actions.
+```js
+var promise = whif.resolve('foo');
+promise.done(console.log);
+console.log('bar');
+```
+the above logs `bar` first and then `foo` because the done-handler is wrapped by `process.nextTick` internally. however, if a promise wraps an asynchronous action anyway it's actually not necessary to defer the resolution until the _next tick_ and thereby twice. for this and other edge cases you may call whif's `sync` method on the promise before you bind successors.
+```js
+var promise = whif
+  .resolve($.ajax(request_settings))
+  .sync()
+  .done( /* ... */ )
+  .catch( /* ... */ );
+```
+be careful with this option since success may be yielded asynchronously but failure synchronously depending on your implementation. remember that promises were normalized by prolonging the resolution because of these potential differences in the first place.
 
 tests & docs
 ------------
@@ -107,12 +118,16 @@ $ cd path/to/<target-folder>
 $ npm install
 ```
 
-### build
-- generates the annotated source to the `./docs` folder
-- uglifys source to `./dist/whif.min.js` for production environments (~2.1 kb)
-- browserifys test bundle to `./test/whif.test.bundle.js`
+### generate docs
+generates the annotated source to the `./docs` folder
 ```sh
-$ grunt build
+$ grunt docs
+```
+
+### build
+jshint checks, uglifys source to `./dist/whif.min.js` for production environments (~2.3 kb) and browserifys test bundle to `./test/whif.test.bundle.js`
+```sh
+$ grunt
 ```
 for convenience there is a ready-made gzip command to further compress the minified version to `./dist/whif.min.js.gz` (~1.1 kb)
 ```sh
@@ -128,7 +143,7 @@ in your browser (requires `grunt build`)
 ```sh
 $ python -m SimpleHTTPServer
 ```
-then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](http://localhost:8000/docs/src/whif.js.html) to read Promise's story - the annotated source.
+then fire up your favorite browser and point it to [localhost:8000/test](http://localhost:8000/test) to run the tests or [localhost:8000/docs](http://localhost:8000/docs/src/whif.js.html) to read whif's story - the annotated source.
 
 licence
 -------
