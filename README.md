@@ -67,7 +67,7 @@ var rejectedPromise = whif.reject(reason);
 grouping promises/concurrent processes
 ```js
 whif.group([p, q, true])
-  .done(function(values){
+  .then(function(values){
     var p_value = values[0];
     var q_value = values[1];
     var boolean = values[2];
@@ -87,16 +87,16 @@ whif.nextTick(function(){
 promises usually resolve/reject their successors asynchronously to ensure consistent behaviour/order of execution since code wrapped in promises may or may not involve asynchronous actions.
 ```js
 var promise = whif.resolve('foo');
-promise.done(console.log);
+promise.then(console.log);
 console.log('bar');
 ```
-the above logs `bar` first and then `foo` because the done-handler is wrapped by `process.nextTick` internally. however, if a promise wraps an asynchronous action anyway it's actually not necessary to defer the resolution until the _next tick_ and thereby twice. for this and other edge cases you may call whif's `sync` method on the promise before you bind successors.
+the above logs `bar` first and then `foo` because the then-handler is wrapped by `process.nextTick` internally. however, if a promise wraps an asynchronous action anyway it's actually not necessary to defer the resolution until the _next tick_ and thereby twice. for this and other edge cases you may call whif's `sync` method on the promise before you bind successors.
 ```js
 var promise = whif
   .resolve($.ajax(request_settings))
   .sync()
-  .done( /* ... */ )
-  .catch( /* ... */ );
+  .then(res)
+  .catch(rej);
 ```
 be careful with this option since success may be yielded asynchronously but failure synchronously depending on your implementation. remember that promises were normalized by prolonging the resolution because of these potential differences in the first place.
 
