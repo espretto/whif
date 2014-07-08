@@ -324,8 +324,12 @@
 
         if (is_primitive(value)) {
           res(value);
-        } else if((value instanceof whif) && value._state !== PENDING){
-          (value._state === RESOLVED ? res : rej)(value._value);
+        } else if(value instanceof whif){
+          if(value._state === PENDING){
+            value.then(res, rej);
+          } else {
+            (value._state === RESOLVED ? res : rej)(value._value);
+          }
         } else {
           try {
             var then = value.then;

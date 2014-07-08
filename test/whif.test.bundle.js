@@ -7596,13 +7596,13 @@ if (typeof module !== 'undefined' && module.exports) {
     throw error;
   }
 
-  function isPrimitive(value) {
+  function is_primitive(value) {
     var type = typeof value;
     return value == null || type !== str_object && type !== str_function;
   }
 
   // avoid old webkit bug where `typeof /re/ === 'function'` yields true.
-  function isFunction(value){
+  function is_function(value){
     return object_toString.call(value) === repr_function;
   }
 
@@ -7627,7 +7627,7 @@ if (typeof module !== 'undefined' && module.exports) {
     that._queue = [];
     that._sync = false;
 
-    if (isFunction(then)) {
+    if (is_function(then)) {
       then(
         function (value) { that._resolve(value); },
         function (reason) { adopt(that, REJECTED, reason); }
@@ -7643,20 +7643,35 @@ if (typeof module !== 'undefined' && module.exports) {
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function (onResolved, onRejected) {
+    then: function (on_resolved, on_rejected) {
 
       var that = this,
         promise = new whif();
 
       that._queue.push({
-        resolve: isFunction(onResolved) ? onResolved : id,
-        reject: isFunction(onRejected) ? onRejected : cancel,
+        resolve: is_function(on_resolved) ? on_resolved : id,
+        reject: is_function(on_rejected) ? on_rejected : cancel,
         promise: promise
       });
 
       run(that);
 
       return promise;
+    },
+
+    // __whif#done__ (public):
+    done: function(on_resolved){
+      return this.then(on_resolved);
+    },
+
+    // __whif#catch__ (public):
+    catch: function(on_rejected){
+      return this.then(null, on_rejected);
+    },
+
+    sync: function(){
+      this._sync = true;
+      return this;
     },
 
     // __whif#_resolve__ (public):
@@ -7675,14 +7690,14 @@ if (typeof module !== 'undefined' && module.exports) {
         called = false,
         then;
 
-      function onResolved(value) {
+      function on_resolved(value) {
         if (!called) {
           called = true;
           that._resolve(value);
         }
       }
 
-      function onRejected(reason) {
+      function on_rejected(reason) {
         if (!called) {
           called = true;
           adopt(that, REJECTED, reason);
@@ -7690,25 +7705,25 @@ if (typeof module !== 'undefined' && module.exports) {
       }
 
       if (that === value) {
-        onRejected(new TypeError());
-      } else if (isPrimitive(value)) {
+        on_rejected(new TypeError());
+      } else if (is_primitive(value)) {
         adopt(that, RESOLVED, value);
       } else if (value instanceof whif) {
         if (value._state === PENDING) {
-          value.then(onResolved, onRejected);
+          value.then(on_resolved, on_rejected);
         } else {
           adopt(that, value._state, value._value);
         }
       } else {
         try {
           then = value.then;
-          if (isFunction(then)) {
-            then.call(value, onResolved, onRejected);
+          if (is_function(then)) {
+            then.call(value, on_resolved, on_rejected);
           } else {
             adopt(that, RESOLVED, value);
           }
         } catch (reason) {
-          onRejected(reason);
+          on_rejected(reason);
         }
       }
 
@@ -7780,9 +7795,21 @@ if (typeof module !== 'undefined' && module.exports) {
     }
 
     if (promise._state !== PENDING) {
-      whif.nextTick(_run);
+      if(this._sync){
+        _run();
+      } else {
+        whif.nextTick(_run);
+      }
     }
   }
+
+  whif.resolve = function(value){
+    return new whif()._resolve(value);
+  };
+
+  whif.reject = function(reason){
+    return new whif()._reject(reason);
+  };
 
   // __whif.nextTick__ (public)
   // 
@@ -7799,7 +7826,7 @@ if (typeof module !== 'undefined' && module.exports) {
       nextTick = owner.nextTick,
       prefixes = 'webkitR-mozR-msR-oR-r'.split('-');
 
-    while (!isFunction(nextTick) && prefixes.length) {
+    while (!is_function(nextTick) && prefixes.length) {
       nextTick = root[prefixes.pop() + 'equestAnimationFrame'];
     }
 
@@ -7838,13 +7865,18 @@ if (typeof module !== 'undefined' && module.exports) {
           reject(reason);
         }
 
-        if (isPrimitive(value)) {
+        if (is_primitive(value)) {
           res(value);
+        } else if(value instanceof whif){
+          if(value._state === PENDING){
+            value.then(res, rej);
+          } else {
+            (value._state === RESOLVED ? res : rej)(value._value);
+          }
         } else {
-          // covers instances of `whif`
           try {
             var then = value.then;
-            if (isFunction(then)) {
+            if (is_function(then)) {
               then.call(value, res, rej);
             } else {
               res(value);
