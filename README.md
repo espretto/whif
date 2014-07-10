@@ -25,7 +25,7 @@ then | instance | `promise.then(res, rej)` | returns the succeeding promise
 catch | instance | `promise.catch(rej)` | `promise.then(id, rej)`
 sync | instance | `promise.sync()` | make promise's resolution synchronous
 nextTick | static | `whif.nextTick(callback)` | shim for `process.nextTick`
-group | static | `whif.group(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
+join | static | `whif.join(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
 _init_ | argument | `function(res, rej){..}`
 _id_ | argument | `function(v){ return v; }` | return first argument
 _callback_ | argument | `function(){..}`| function to be deferred until the next run-loop
@@ -66,7 +66,7 @@ var rejectedPromise = whif.reject(reason);
 ```
 grouping promises/concurrent processes
 ```js
-whif.group([p, q, true])
+whif.join([p, q, true])
   .then(function(values){
     var p_value = values[0];
     var q_value = values[1];

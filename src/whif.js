@@ -15,7 +15,7 @@
 
   PENDING = -1,
   REJECTED = 0,
-  RESOLVED = 1,
+  FULFILLED = 1,
 
   // well known strings
   // ------------------
@@ -100,13 +100,13 @@
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function (on_resolved, on_rejected) {
+    then: function (on_fulfilled, on_rejected) {
 
       var that = this,
         promise = new whif();
 
       that._queue.push({
-        resolve: is_function(on_resolved) ? on_resolved : id,
+        resolve: is_function(on_fulfilled) ? on_fulfilled : id,
         reject: is_function(on_rejected) ? on_rejected : cancel,
         promise: promise
       });
@@ -142,7 +142,7 @@
         called = false,
         then;
 
-      function on_resolved(value) {
+      function on_fulfilled(value) {
         if (!called) {
           called = true;
           that._resolve(value);
@@ -159,10 +159,10 @@
       if (that === value) {
         on_rejected(new TypeError());
       } else if (is_primitive(value)) {
-        adopt(that, RESOLVED, value);
+        adopt(that, FULFILLED, value);
       } else if (value instanceof whif) {
         if (value._state === PENDING) {
-          value.then(on_resolved, on_rejected);
+          value.then(on_fulfilled, on_rejected);
         } else {
           adopt(that, value._state, value._value);
         }
@@ -170,9 +170,9 @@
         try {
           then = value.then;
           if (is_function(then)) {
-            then.call(value, on_resolved, on_rejected);
+            then.call(value, on_fulfilled, on_rejected);
           } else {
-            adopt(that, RESOLVED, value);
+            adopt(that, FULFILLED, value);
           }
         } catch (reason) {
           on_rejected(reason);
@@ -215,7 +215,7 @@
   // - flush callstack and await next tick
   // - dequeue triples in the order registered, for each:
   //   - call registered resolve/reject handlers dependent on the transition
-  //   - reject immediately if an erro is thrown
+  //   - reject immediately if an error is thrown
   //   - `._resolve()` the returned value
   //   
   function run(promise) {
@@ -232,7 +232,7 @@
         var called = false;
         try {
           value = (
-            promise._state === RESOLVED ?
+            promise._state === FULFILLED ?
             queue_item.resolve :
             queue_item.reject
           )(promise._value);
@@ -289,52 +289,53 @@
     };
   }());
 
-  // __whif.group__ (public)
+  // __whif.join__ (public)
   // 
-  // - group whifs and resolve when all are resolved,
+  // - join whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
-  // - `._resolve()` each passed item and proxy its future value
-  //   or the item _as is_ to a newly created whif which in turn
-  //   resolves/rejects the master whif
+  // - resolve each passed item and proxy its future value
+  //   or the item _as is_ to the master's values array.
   //   
-  whif.group = function (args) {
+  whif.join = function (args) {
 
     return new whif(function (resolve, reject) {
+      var args_len = args.length, values;
 
-      var args_len = args.length,
-        values = new Array(args_len);
+      if(!args_len) return resolve(args);
+
+      values = new Array(args_len);
 
       array_forEach.call(args, function (value, i) {
 
-        function res(value) {
+        function on_fulfilled(value) {
           values[i] = value;
           if (!--args_len) {
             resolve(values);
           }
         }
 
-        function rej(reason) {
+        function on_rejected(reason) {
           reject(reason);
         }
 
         if (is_primitive(value)) {
-          res(value);
+          on_fulfilled(value);
         } else if(value instanceof whif){
           if(value._state === PENDING){
-            value.then(res, rej);
+            value.then(on_fulfilled, on_rejected);
           } else {
-            (value._state === RESOLVED ? res : rej)(value._value);
+            (value._state === FULFILLED ? on_fulfilled : on_rejected)(value._value);
           }
         } else {
           try {
             var then = value.then;
             if (is_function(then)) {
-              then.call(value, res, rej);
+              then.call(value, on_fulfilled, on_rejected);
             } else {
-              res(value);
+              on_fulfilled(value);
             }
           } catch (reason) {
-            rej(reason);
+            on_rejected(reason);
           }
         }
       });
