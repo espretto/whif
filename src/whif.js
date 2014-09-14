@@ -118,8 +118,8 @@
       return promise;
     },
 
-    // __whif#catch__ (public):
-    catch: function(onRejected){
+    // __whif#fail__ (public):
+    fail: function(onRejected){
       return this.then(null, onRejected);
     },
 

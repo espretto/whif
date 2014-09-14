@@ -22,7 +22,7 @@ signature | description
 `promise._resolve(value)` | resolve a yet pending deferred
 `promise._reject(value)` | reject a yet pending deferred
 `promise.then(res, rej)` | returns the succeeding promise
-`promise.catch(rej)` | `promise.then(id, rej)`
+`promise.fail(rej)` | `promise.then(id, rej)`
 `promise.sync()` | make promise's resolution synchronous
 
 usage
@@ -55,7 +55,7 @@ the usual suspect (chained to the above)
 ```
 convenience shortcuts
 ```js
-promise.catch(function(reason){/*...*/});
+promise.fail(function(reason){/*...*/});
 var resolvedPromise = whif.resolve(value); // not necessarily fulfilled!
 var rejectedPromise = whif.reject(reason);
 ```
@@ -68,7 +68,7 @@ whif.join([p, q, true])
     var boolean = values[2];
     throw new Error();
   })
-  .catch(function(reason){
+  .fail(function(reason){
     // handler for whichever was rejected first,
     // not necessarily the error thrown above!
   });
@@ -91,7 +91,7 @@ var promise = whif
   .resolve($.ajax(request_settings))
   .sync()
   .then( /* ... */ )
-  .catch( /* ... */ );
+  .fail( /* ... */ );
 ```
 be careful with this option since success may be yielded asynchronously but failure synchronously depending on your implementation. remember that promises were normalized by prolonging the resolution because of these potential differences in the first place.
 
