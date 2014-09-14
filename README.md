@@ -15,7 +15,7 @@ quick reference
 signature | description
 --- | ---
 `[new] whif([init])` | constructor/factory with optional `init = function(res, rej){/*...*/}`
-`whif.resolve(value)` | wrap `value` in a resolved promise
+`whif.resolve(value)` | perform the resolve procedure on `value`
 `whif.reject(reason)` | wrap `reason` in a rejected promise
 `whif.join(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
 `whif.nextTick(callback)` | shim for `process.nextTick`
@@ -28,21 +28,22 @@ signature | description
 usage
 -----
 
-the `new` operator may be omitted
-```js
-var deferred = new whif();
-```
-private deferred api
-```js
-deferred._resolve(value);
-deferred._reject(reason);
-```
-scoped handlers
+use `whif` as a factory method or prepend the `new` operator and pass
+a function to it for scoped behaviour shut off from the surrounding code.
 ```js
 var promise = whif(function(resolve, reject){
   if(condition) resolve(value);
   else reject(reason);
 })
+```
+the above's equivalent using whif's _private_ deferred api:
+```
+var promise = (function(){
+  var deferred = whif();
+  if(condition) deferred._resolve(value);
+  else deferred._reject(reason);
+  return deferred;
+}())
 ```
 the usual suspect (chained to the above)
 ```js
@@ -55,13 +56,13 @@ the usual suspect (chained to the above)
 convenience shortcuts
 ```js
 promise.catch(function(reason){/*...*/});
-var resolvedPromise = whif.resolve(value);
+var resolvedPromise = whif.resolve(value); // not necessarily fulfilled!
 var rejectedPromise = whif.reject(reason);
 ```
 grouping promises/concurrent processes
 ```js
 whif.group([p, q, true])
-  .done(function(values){
+  .then(function(values){
     var p_value = values[0];
     var q_value = values[1];
     var boolean = values[2];
@@ -81,7 +82,7 @@ whif.nextTick(function(){
 promises usually resolve/reject their successors asynchronously to ensure consistent behaviour/order of execution since code wrapped in promises may or may not involve asynchronous actions.
 ```js
 var promise = whif.resolve('foo');
-promise.done(console.log);
+promise.then(console.log);
 console.log('bar');
 ```
 the above logs `bar` first and then `foo` because the done-handler is wrapped by `process.nextTick` internally. however, if a promise wraps an asynchronous action anyway it's actually not necessary to defer the resolution until the _next tick_ and thereby twice. for this and other edge cases you may call whif's `sync` method on the promise before you bind successors.
@@ -89,7 +90,7 @@ the above logs `bar` first and then `foo` because the done-handler is wrapped by
 var promise = whif
   .resolve($.ajax(request_settings))
   .sync()
-  .done( /* ... */ )
+  .then( /* ... */ )
   .catch( /* ... */ );
 ```
 be careful with this option since success may be yielded asynchronously but failure synchronously depending on your implementation. remember that promises were normalized by prolonging the resolution because of these potential differences in the first place.
