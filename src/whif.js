@@ -270,8 +270,8 @@
   };
 
   // __whif.nextTick__ (public)
-  // 
   // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
+  // 
   // - try `process.nextTick`
   // - fall back on `requestAnimationFrame` and all its vendor prefixes
   // - make sure the above are called in the context of their owner object
@@ -305,7 +305,8 @@
   whif.join = function (args) {
 
     return new whif(function (resolve, reject) {
-      var len = args.length, values;
+      var values,
+        len = args.length;
 
       if(!len) return resolve(args);
 
@@ -313,33 +314,10 @@
 
       arrayForEach.call(args, function(value, i){
 
-        function res(value) {
+        whif.resolve(value).sync().then(function(value){
           values[i] = value;
-          if (!--len) {
-            resolve(values);
-          }
-        }
-
-        if (isPrimitive(value)) {
-          res(value);
-        } else if(value instanceof whif){
-          if(value._state === PENDING){
-            value.then(res, reject);
-          } else {
-            (value._state === FULFILLED ? res : reject)(value._value);
-          }
-        } else {
-          try {
-            var then = value.then;
-            if (isFunction(then)) {
-              then.call(value, res, reject);
-            } else {
-              res(value);
-            }
-          } catch (reason) {
-            reject(reason);
-          }
-        }
+          if (!--len) resolve(values);
+        }, reject);
       });
     });
   };
