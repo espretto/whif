@@ -61,7 +61,7 @@ var rejectedPromise = whif.reject(reason);
 ```
 grouping promises/concurrent processes
 ```js
-whif.group([p, q, true])
+whif.join([p, q, true])
   .then(function(values){
     var p_value = values[0];
     var q_value = values[1];
