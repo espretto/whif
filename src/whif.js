@@ -309,6 +309,10 @@
       var args_len = args.length,
         values = new Array(args_len);
 
+      function rej(reason) {
+        reject(reason);
+      }
+
       array_forEach.call(args, function (value, i) {
 
         function res(value) {
@@ -316,10 +320,6 @@
           if (!--args_len) {
             resolve(values);
           }
-        }
-
-        function rej(reason) {
-          reject(reason);
         }
 
         if (is_primitive(value)) {

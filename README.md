@@ -5,8 +5,6 @@ whif
 this is a [Promises A+][3] implementation compliant with version 1.1 passing the [tests][2].
 many thanks to this lib's originator Rhys Brett-Bowen and his great article on [Promises/A+ - understanding the spec through implementation][1].
 
-[![browser support](https://ci.testling.com/espretto/whif.png)](https://ci.testling.com/espretto/whif)
-
 [1]: http://modernjavascript.blogspot.de/2013/08/promisesa-understanding-by-doing.html
 [2]: https://github.com/promises-aplus/promises-tests
 [3]: http://promises-aplus.github.io/promises-spec/
@@ -14,24 +12,18 @@ many thanks to this lib's originator Rhys Brett-Bowen and his great article on [
 quick reference
 ---------------
 
-method | type | signature | description
---- | --- | --- | ---
-whif | static | `whif(init)` | constructor/factory with optional `init`
-resolve | static | `whif.resolve(value)` | wrap `value` in a resolved promise
-_resolve | instance | `deferred._resolve(value)` | resolve a yet pending deferred
-reject | static | `whif.reject(reason)` | wrap `reason` in a rejected promise
-_reject | instance | `deferred._reject(value)` | reject a yet pending deferred
-then | instance | `promise.then(res, rej)` | returns the succeeding promise
-done | instance | `promise.done(res)` | `promise.then(res, cancel)`
-catch | instance | `promise.catch(rej)` | `promise.then(id, rej)`
-sync | instance | `promise.sync()` | make promise's resolution synchronous
-nextTick | static | `whif.nextTick(callback)` | shim for `process.nextTick`
-group | static | `whif.group(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
-_init_ | argument | `function(res, rej){..}`
-_cancel_ | argument | `function(e){ throw e; }` | rethrow first argument
-_id_ | argument | `function(v){ return v; }` | return first argument
-_callback_ | argument | `function(){..}`| function to be deferred until the next run-loop
-_thenables_ | argument | `[whif(..), $.ajax(..), 'pass-on']` | array of usually objects with a `then` method, primitives are simply passed on.
+signature | description
+--- | ---
+`[new] whif([init])` | constructor/factory with optional `init = function(res, rej){/*...*/}`
+`whif.resolve(value)` | wrap `value` in a resolved promise
+`whif.reject(reason)` | wrap `reason` in a rejected promise
+`whif.join(thenables)` | returns promise that resolves when all child promises resolve or proxies the earliest rejection.
+`whif.nextTick(callback)` | shim for `process.nextTick`
+`promise._resolve(value)` | resolve a yet pending deferred
+`promise._reject(value)` | reject a yet pending deferred
+`promise.then(res, rej)` | returns the succeeding promise
+`promise.catch(rej)` | `promise.then(id, rej)`
+`promise.sync()` | make promise's resolution synchronous
 
 usage
 -----
@@ -53,7 +45,7 @@ var promise = whif(function(resolve, reject){
 })
 ```
 the usual suspect (chained to the above)
-```
+```js
 .then(function(value){
   // success
 }, function(reason){
@@ -62,8 +54,7 @@ the usual suspect (chained to the above)
 ```
 convenience shortcuts
 ```js
-promise.done(function(value){ /* ... */ });
-promise.catch(function(reason){ /* ... */ });
+promise.catch(function(reason){/*...*/});
 var resolvedPromise = whif.resolve(value);
 var rejectedPromise = whif.reject(reason);
 ```
@@ -84,7 +75,7 @@ whif.group([p, q, true])
 whif ships with a [shim for cross-platform/-browser `process.nextTick`](https://gist.github.com/espretto/ec79d6d0fc7a898b92b1) which falls back to (vendor specific) `requestAnimationFrame`, `setImmediate` or `setTimeout`. 
 ```js
 whif.nextTick(function(){
-  // executed in the next run-loop
+  // executed in the next run-loop-cycle
 });
 ```
 promises usually resolve/reject their successors asynchronously to ensure consistent behaviour/order of execution since code wrapped in promises may or may not involve asynchronous actions.
