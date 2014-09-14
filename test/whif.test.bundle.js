@@ -360,14 +360,104 @@ var objectKeys = Object.keys || function (obj) {
   return keys;
 };
 
-},{"util/":3}],2:[function(require,module,exports){
+},{"util/":5}],2:[function(require,module,exports){
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    ctor.prototype = Object.create(superCtor.prototype, {
+      constructor: {
+        value: ctor,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      }
+    });
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    ctor.super_ = superCtor
+    var TempCtor = function () {}
+    TempCtor.prototype = superCtor.prototype
+    ctor.prototype = new TempCtor()
+    ctor.prototype.constructor = ctor
+  }
+}
+
+},{}],3:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+
+process.nextTick = (function () {
+    var canSetImmediate = typeof window !== 'undefined'
+    && window.setImmediate;
+    var canPost = typeof window !== 'undefined'
+    && window.postMessage && window.addEventListener
+    ;
+
+    if (canSetImmediate) {
+        return function (f) { return window.setImmediate(f) };
+    }
+
+    if (canPost) {
+        var queue = [];
+        window.addEventListener('message', function (ev) {
+            var source = ev.source;
+            if ((source === window || source === null) && ev.data === 'process-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+
+        return function nextTick(fn) {
+            queue.push(fn);
+            window.postMessage('process-tick', '*');
+        };
+    }
+
+    return function nextTick(fn) {
+        setTimeout(fn, 0);
+    };
+})();
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+}
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+
+},{}],4:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],3:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -957,101 +1047,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require("FWaASH"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":2,"FWaASH":5,"inherits":4}],4:[function(require,module,exports){
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    ctor.prototype = Object.create(superCtor.prototype, {
-      constructor: {
-        value: ctor,
-        enumerable: false,
-        writable: true,
-        configurable: true
-      }
-    });
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    ctor.super_ = superCtor
-    var TempCtor = function () {}
-    TempCtor.prototype = superCtor.prototype
-    ctor.prototype = new TempCtor()
-    ctor.prototype.constructor = ctor
-  }
-}
-
-},{}],5:[function(require,module,exports){
-// shim for using process in browser
-
-var process = module.exports = {};
-
-process.nextTick = (function () {
-    var canSetImmediate = typeof window !== 'undefined'
-    && window.setImmediate;
-    var canPost = typeof window !== 'undefined'
-    && window.postMessage && window.addEventListener
-    ;
-
-    if (canSetImmediate) {
-        return function (f) { return window.setImmediate(f) };
-    }
-
-    if (canPost) {
-        var queue = [];
-        window.addEventListener('message', function (ev) {
-            var source = ev.source;
-            if ((source === window || source === null) && ev.data === 'process-tick') {
-                ev.stopPropagation();
-                if (queue.length > 0) {
-                    var fn = queue.shift();
-                    fn();
-                }
-            }
-        }, true);
-
-        return function nextTick(fn) {
-            queue.push(fn);
-            window.postMessage('process-tick', '*');
-        };
-    }
-
-    return function nextTick(fn) {
-        setTimeout(fn, 0);
-    };
-})();
-
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-}
-
-// TODO(shtylman)
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-
-},{}],6:[function(require,module,exports){
-module.exports=require(2)
-},{}],7:[function(require,module,exports){
-module.exports=require(3)
-},{"./support/isBuffer":6,"FWaASH":5,"inherits":4}],8:[function(require,module,exports){
+},{"./support/isBuffer":4,"FWaASH":3,"inherits":2}],6:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -1131,7 +1127,7 @@ describe("2.1.2.1: When fulfilled, a promise: must not transition to any other s
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/testThreeCases":22,"assert":1}],9:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1}],7:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -1211,7 +1207,7 @@ describe("2.1.3.1: When rejected, a promise: must not transition to any other st
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/testThreeCases":22,"assert":1}],10:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1}],8:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -1292,7 +1288,7 @@ describe("2.2.1: Both `onFulfilled` and `onRejected` are optional arguments.", f
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],11:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -1447,7 +1443,7 @@ describe("2.2.2: If `onFulfilled` is a function,", function () {
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/testThreeCases":22,"assert":1}],12:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1}],10:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -1602,7 +1598,7 @@ describe("2.2.3: If `onRejected` is a function,", function () {
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/testThreeCases":22,"assert":1}],13:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1}],11:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -1788,7 +1784,7 @@ describe("2.2.4: `onFulfilled` or `onRejected` must not be called until the exec
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/testThreeCases":22,"assert":1}],14:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1}],12:[function(require,module,exports){
 (function (global){
 /*jshint strict: false */
 
@@ -1839,7 +1835,7 @@ describe("2.2.5 `onFulfilled` and `onRejected` must be called as functions (i.e.
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"assert":1}],15:[function(require,module,exports){
+},{"assert":1}],13:[function(require,module,exports){
 "use strict";
 
 var assert = require("assert");
@@ -2098,7 +2094,7 @@ describe("2.2.6: `then` may be called multiple times on the same promise.", func
     });
 });
 
-},{"./helpers/testThreeCases":22,"assert":1,"sinon":24}],16:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1,"sinon":22}],14:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -2211,7 +2207,7 @@ describe("2.2.7: `then` must return a promise: `promise2 = promise1.then(onFulfi
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/reasons":21,"./helpers/testThreeCases":22,"assert":1}],17:[function(require,module,exports){
+},{"./helpers/reasons":19,"./helpers/testThreeCases":20,"assert":1}],15:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -2249,7 +2245,7 @@ describe("2.3.1: If `promise` and `x` refer to the same object, reject `promise`
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"assert":1}],18:[function(require,module,exports){
+},{"assert":1}],16:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -2379,7 +2375,7 @@ describe("2.3.2: If `x` is a promise, adopt its state", function () {
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"assert":1}],19:[function(require,module,exports){
+},{"assert":1}],17:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -3352,7 +3348,7 @@ describe("2.3.3: Otherwise, if `x` is an object or function,", function () {
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./helpers/reasons":21,"./helpers/thenables":23,"assert":1}],20:[function(require,module,exports){
+},{"./helpers/reasons":19,"./helpers/thenables":21,"assert":1}],18:[function(require,module,exports){
 "use strict";
 
 var assert = require("assert");
@@ -3423,7 +3419,7 @@ describe("2.3.4: If `x` is not an object or function, fulfill `promise` with `x`
     );
 });
 
-},{"./helpers/testThreeCases":22,"assert":1}],21:[function(require,module,exports){
+},{"./helpers/testThreeCases":20,"assert":1}],19:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -3483,7 +3479,7 @@ exports["a rejected promise"] = function () {
 };
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],22:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -3533,7 +3529,7 @@ exports.testRejected = function (reason, test) {
 };
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],23:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 (function (global){
 "use strict";
 
@@ -3679,7 +3675,7 @@ exports.rejected = {
 };
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],24:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 /*jslint eqeqeq: false, onevar: false, forin: true, nomen: false, regexp: false, plusplus: false*/
 /*global module, require, __dirname, document*/
 /**
@@ -3755,19 +3751,15 @@ var sinon = (function (formatio) {
             if (!isFunction(wrappedMethod)) {
                 error = new TypeError("Attempted to wrap " + (typeof wrappedMethod) + " property " +
                                     property + " as function");
-            }
-
-            if (wrappedMethod.restore && wrappedMethod.restore.sinon) {
+            } else if (wrappedMethod.restore && wrappedMethod.restore.sinon) {
                 error = new TypeError("Attempted to wrap " + property + " which is already wrapped");
-            }
-
-            if (wrappedMethod.calledBefore) {
+            } else if (wrappedMethod.calledBefore) {
                 var verb = !!wrappedMethod.returns ? "stubbed" : "spied on";
                 error = new TypeError("Attempted to wrap " + property + " which is already " + verb);
             }
 
             if (error) {
-                if (wrappedMethod._stack) {
+                if (wrappedMethod && wrappedMethod._stack) {
                     error.stack += '\n--------------\n' + wrappedMethod._stack;
                 }
                 throw error;
@@ -3871,6 +3863,10 @@ var sinon = (function (formatio) {
 
             for (prop in a) {
                 aLength += 1;
+
+                if (!(prop in b)) {
+                    return false;
+                }
 
                 if (!deepEqual(a[prop], b[prop])) {
                     return false;
@@ -4017,30 +4013,31 @@ var sinon = (function (formatio) {
         }
     };
 
-    var isNode = typeof module !== "undefined" && module.exports;
+    var isNode = typeof module !== "undefined" && module.exports && typeof require == "function";
     var isAMD = typeof define === 'function' && typeof define.amd === 'object' && define.amd;
 
+    function makePublicAPI(require, exports, module) {
+        module.exports = sinon;
+        sinon.spy = require("./sinon/spy");
+        sinon.spyCall = require("./sinon/call");
+        sinon.behavior = require("./sinon/behavior");
+        sinon.stub = require("./sinon/stub");
+        sinon.mock = require("./sinon/mock");
+        sinon.collection = require("./sinon/collection");
+        sinon.assert = require("./sinon/assert");
+        sinon.sandbox = require("./sinon/sandbox");
+        sinon.test = require("./sinon/test");
+        sinon.testCase = require("./sinon/test_case");
+        sinon.match = require("./sinon/match");
+    }
+
     if (isAMD) {
-        define(function(){
-            return sinon;
-        });
+        define(makePublicAPI);
     } else if (isNode) {
         try {
             formatio = require("formatio");
         } catch (e) {}
-        module.exports = sinon;
-        module.exports.spy = require("./sinon/spy");
-        module.exports.spyCall = require("./sinon/call");
-        module.exports.behavior = require("./sinon/behavior");
-        module.exports.stub = require("./sinon/stub");
-        module.exports.mock = require("./sinon/mock");
-        module.exports.collection = require("./sinon/collection");
-        module.exports.assert = require("./sinon/assert");
-        module.exports.sandbox = require("./sinon/sandbox");
-        module.exports.test = require("./sinon/test");
-        module.exports.testCase = require("./sinon/test_case");
-        module.exports.assert = require("./sinon/assert");
-        module.exports.match = require("./sinon/match");
+        makePublicAPI(require, exports, module);
     }
 
     if (formatio) {
@@ -4063,7 +4060,7 @@ var sinon = (function (formatio) {
     return sinon;
 }(typeof formatio == "object" && formatio));
 
-},{"./sinon/assert":25,"./sinon/behavior":26,"./sinon/call":27,"./sinon/collection":28,"./sinon/match":29,"./sinon/mock":30,"./sinon/sandbox":31,"./sinon/spy":32,"./sinon/stub":33,"./sinon/test":34,"./sinon/test_case":35,"formatio":37,"util":7}],25:[function(require,module,exports){
+},{"./sinon/assert":23,"./sinon/behavior":24,"./sinon/call":25,"./sinon/collection":26,"./sinon/match":27,"./sinon/mock":28,"./sinon/sandbox":29,"./sinon/spy":30,"./sinon/stub":31,"./sinon/test":32,"./sinon/test_case":33,"formatio":35,"util":5}],23:[function(require,module,exports){
 (function (global){
 /**
  * @depend ../sinon.js
@@ -4082,7 +4079,7 @@ var sinon = (function (formatio) {
 "use strict";
 
 (function (sinon, global) {
-    var commonJSModule = typeof module !== "undefined" && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
     var slice = Array.prototype.slice;
     var assert;
 
@@ -4256,15 +4253,17 @@ var sinon = (function (formatio) {
     mirrorPropAsAssertion("threw", "%n did not throw exception%C");
     mirrorPropAsAssertion("alwaysThrew", "%n did not always throw exception%C");
 
-    if (commonJSModule) {
+    sinon.assert = assert;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = assert; });
+    } else if (commonJSModule) {
         module.exports = assert;
-    } else {
-        sinon.assert = assert;
     }
 }(typeof sinon == "object" && sinon || null, typeof window != "undefined" ? window : (typeof self != "undefined") ? self : global));
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../sinon":24}],26:[function(require,module,exports){
+},{"../sinon":22}],24:[function(require,module,exports){
 (function (process){
 /**
  * @depend ../sinon.js
@@ -4283,7 +4282,7 @@ var sinon = (function (formatio) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
 
     if (!sinon && commonJSModule) {
         sinon = require("../sinon");
@@ -4592,14 +4591,17 @@ var sinon = (function (formatio) {
         }
     }
 
-    if (commonJSModule) {
+    sinon.behavior = proto;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = proto; });
+    } else if (commonJSModule) {
         module.exports = proto;
-    } else {
-        sinon.behavior = proto;
     }
 }(typeof sinon == "object" && sinon || null));
+
 }).call(this,require("FWaASH"))
-},{"../sinon":24,"FWaASH":5}],27:[function(require,module,exports){
+},{"../sinon":22,"FWaASH":3}],25:[function(require,module,exports){
 /**
   * @depend ../sinon.js
   * @depend match.js
@@ -4619,7 +4621,7 @@ var sinon = (function (formatio) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
     if (!sinon && commonJSModule) {
         sinon = require("../sinon");
     }
@@ -4796,15 +4798,17 @@ var sinon = (function (formatio) {
     }
     createSpyCall.toString = callProto.toString; // used by mocks
 
-    if (commonJSModule) {
+    sinon.spyCall = createSpyCall;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = createSpyCall; });
+    } else if (commonJSModule) {
         module.exports = createSpyCall;
-    } else {
-        sinon.spyCall = createSpyCall;
     }
 }(typeof sinon == "object" && sinon || null));
 
 
-},{"../sinon":24}],28:[function(require,module,exports){
+},{"../sinon":22}],26:[function(require,module,exports){
 /**
  * @depend ../sinon.js
  * @depend stub.js
@@ -4823,7 +4827,7 @@ var sinon = (function (formatio) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
     var push = [].push;
     var hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -4952,14 +4956,16 @@ var sinon = (function (formatio) {
         }
     };
 
-    if (commonJSModule) {
+    sinon.collection = collection;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = collection; });
+    } else if (commonJSModule) {
         module.exports = collection;
-    } else {
-        sinon.collection = collection;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24}],29:[function(require,module,exports){
+},{"../sinon":22}],27:[function(require,module,exports){
 /* @depend ../sinon.js */
 /*jslint eqeqeq: false, onevar: false, plusplus: false*/
 /*global module, require, sinon*/
@@ -4974,7 +4980,7 @@ var sinon = (function (formatio) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
 
     if (!sinon && commonJSModule) {
         sinon = require("../sinon");
@@ -5197,14 +5203,16 @@ var sinon = (function (formatio) {
     match.regexp = match.typeOf("regexp");
     match.date = match.typeOf("date");
 
-    if (commonJSModule) {
+    sinon.match = match;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = match; });
+    } else if (commonJSModule) {
         module.exports = match;
-    } else {
-        sinon.match = match;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24}],30:[function(require,module,exports){
+},{"../sinon":22}],28:[function(require,module,exports){
 /**
  * @depend ../sinon.js
  * @depend stub.js
@@ -5222,7 +5230,7 @@ var sinon = (function (formatio) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
     var push = [].push;
     var match;
 
@@ -5648,14 +5656,16 @@ var sinon = (function (formatio) {
         };
     }());
 
-    if (commonJSModule) {
+    sinon.mock = mock;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = mock; });
+    } else if (commonJSModule) {
         module.exports = mock;
-    } else {
-        sinon.mock = mock;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24,"./match":29}],31:[function(require,module,exports){
+},{"../sinon":22,"./match":27}],29:[function(require,module,exports){
 /**
  * @depend ../sinon.js
  * @depend collection.js
@@ -5675,7 +5685,7 @@ var sinon = (function (formatio) {
  */
 "use strict";
 
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports && typeof require == "function") {
     var sinon = require("../sinon");
     sinon.extend(sinon, require("./util/fake_timers"));
 }
@@ -5794,12 +5804,14 @@ if (typeof module !== 'undefined' && module.exports) {
 
     sinon.sandbox.useFakeXMLHttpRequest = sinon.sandbox.useFakeServer;
 
-    if (typeof module !== 'undefined' && module.exports) {
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = sinon.sandbox; });
+    } else if (typeof module !== 'undefined' && module.exports) {
         module.exports = sinon.sandbox;
     }
 }());
 
-},{"../sinon":24,"./util/fake_timers":36}],32:[function(require,module,exports){
+},{"../sinon":22,"./util/fake_timers":34}],30:[function(require,module,exports){
 /**
   * @depend ../sinon.js
   * @depend call.js
@@ -5817,7 +5829,7 @@ if (typeof module !== 'undefined' && module.exports) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
     var push = Array.prototype.push;
     var slice = Array.prototype.slice;
     var callId = 0;
@@ -5948,6 +5960,9 @@ if (typeof module !== 'undefined' && module.exports) {
             push.call(this.args, args);
             push.call(this.callIds, callId++);
 
+            // Make call properties available from within the spied function:
+            createCallProperties.call(this);
+
             try {
                 if (matching) {
                     returnValue = matching.invoke(func, thisValue, args);
@@ -5966,6 +5981,7 @@ if (typeof module !== 'undefined' && module.exports) {
             push.call(this.exceptions, exception);
             push.call(this.returnValues, returnValue);
 
+            // Make return value and exception available in the calls:
             createCallProperties.call(this);
 
             if (exception !== undefined) {
@@ -5973,6 +5989,11 @@ if (typeof module !== 'undefined' && module.exports) {
             }
 
             return returnValue;
+        },
+
+        named: function named(name) {
+            this.displayName = name;
+            return this;
         },
 
         getCall: function getCall(i) {
@@ -6200,15 +6221,16 @@ if (typeof module !== 'undefined' && module.exports) {
     sinon.extend(spy, spyApi);
 
     spy.spyCall = sinon.spyCall;
+    sinon.spy = spy;
 
-    if (commonJSModule) {
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = spy; });
+    } else if (commonJSModule) {
         module.exports = spy;
-    } else {
-        sinon.spy = spy;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24}],33:[function(require,module,exports){
+},{"../sinon":22}],31:[function(require,module,exports){
 /**
  * @depend ../sinon.js
  * @depend spy.js
@@ -6227,7 +6249,7 @@ if (typeof module !== 'undefined' && module.exports) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
 
     if (!sinon && commonJSModule) {
         sinon = require("../sinon");
@@ -6362,14 +6384,16 @@ if (typeof module !== 'undefined' && module.exports) {
         return proto;
     }()));
 
-    if (commonJSModule) {
+    sinon.stub = stub;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = stub; });
+    } else if (commonJSModule) {
         module.exports = stub;
-    } else {
-        sinon.stub = stub;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24}],34:[function(require,module,exports){
+},{"../sinon":22}],32:[function(require,module,exports){
 /**
  * @depend ../sinon.js
  * @depend stub.js
@@ -6389,7 +6413,7 @@ if (typeof module !== 'undefined' && module.exports) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
 
     if (!sinon && commonJSModule) {
         sinon = require("../sinon");
@@ -6406,7 +6430,7 @@ if (typeof module !== 'undefined' && module.exports) {
             throw new TypeError("sinon.test needs to wrap a test function, got " + type);
         }
 
-        return function () {
+        function sinonSandboxedTest() {
             var config = sinon.getConfig(sinon.config);
             config.injectInto = config.injectIntoThis && this || config.injectInto;
             var sandbox = sinon.sandbox.create(config);
@@ -6429,6 +6453,14 @@ if (typeof module !== 'undefined' && module.exports) {
 
             return result;
         };
+
+        if (callback.length) {
+            return function sinonAsyncSandboxedTest(callback) {
+                return sinonSandboxedTest.apply(this, arguments);
+            };
+        }
+
+        return sinonSandboxedTest;
     }
 
     test.config = {
@@ -6439,14 +6471,16 @@ if (typeof module !== 'undefined' && module.exports) {
         useFakeServer: true
     };
 
-    if (commonJSModule) {
+    sinon.test = test;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = test; });
+    } else if (commonJSModule) {
         module.exports = test;
-    } else {
-        sinon.test = test;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24}],35:[function(require,module,exports){
+},{"../sinon":22}],33:[function(require,module,exports){
 /**
  * @depend ../sinon.js
  * @depend test.js
@@ -6464,7 +6498,7 @@ if (typeof module !== 'undefined' && module.exports) {
 "use strict";
 
 (function (sinon) {
-    var commonJSModule = typeof module !== 'undefined' && module.exports;
+    var commonJSModule = typeof module !== "undefined" && module.exports && typeof require == "function";
 
     if (!sinon && commonJSModule) {
         sinon = require("../sinon");
@@ -6538,14 +6572,16 @@ if (typeof module !== 'undefined' && module.exports) {
         return methods;
     }
 
-    if (commonJSModule) {
+    sinon.testCase = testCase;
+
+    if (typeof define === "function" && define.amd) {
+        define(["module"], function(module) { module.exports = testCase; });
+    } else if (commonJSModule) {
         module.exports = testCase;
-    } else {
-        sinon.testCase = testCase;
     }
 }(typeof sinon == "object" && sinon || null));
 
-},{"../sinon":24}],36:[function(require,module,exports){
+},{"../sinon":22}],34:[function(require,module,exports){
 (function (global){
 /*jslint eqeqeq: false, plusplus: false, evil: true, onevar: false, browser: true, forin: false*/
 /*global module, require, window*/
@@ -6684,10 +6720,18 @@ if (typeof sinon == "undefined") {
         },
 
         clearTimeout: function clearTimeout(timerId) {
+            if (!timerId) {
+                // null appears to be allowed in most browsers, and appears to be relied upon by some libraries, like Bootstrap carousel
+                return;
+            }
             if (!this.timeouts) {
                 this.timeouts = [];
             }
-
+            // in Node, timerId is an object with .ref()/.unref(), and
+            // its .id field is the actual timer id.
+            if (typeof timerId === 'object') {
+              timerId = timerId.id
+            }
             if (timerId in this.timeouts) {
                 delete this.timeouts[timerId];
             }
@@ -6950,7 +6994,7 @@ if (typeof module !== 'undefined' && module.exports) {
 }
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],37:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 (function (global){
 ((typeof define === "function" && define.amd && function (m) {
     define("formatio", ["samsam"], m);
@@ -7153,7 +7197,7 @@ if (typeof module !== 'undefined' && module.exports) {
 });
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"samsam":38}],38:[function(require,module,exports){
+},{"samsam":36}],36:[function(require,module,exports){
 ((typeof define === "function" && define.amd && function (m) { define("samsam", m); }) ||
  (typeof module === "object" &&
       function (m) { module.exports = m(); }) || // Node
@@ -7539,7 +7583,7 @@ if (typeof module !== 'undefined' && module.exports) {
     };
 });
 
-},{}],39:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 (function (process){
 /*!
  * whif javascript library released under MIT licence
@@ -7558,28 +7602,31 @@ if (typeof module !== 'undefined' && module.exports) {
 
   PENDING = -1,
   REJECTED = 0,
-  RESOLVED = 1,
+  FULFILLED = 1,
 
   // well known strings
   // ------------------
 
-  str_object = 'object',
-  str_function = 'function',
-  repr_function = '[object Function]',
+  typeObject = 'object',
+  typeFunction = 'function',
+  reprFunction = '[object Function]',
 
   // helper functions
   // ----------------
 
-  object_toString = ({}).toString,
+  objectToString = ({}).toString,
 
-  array_forEach = [].forEach || function(iter, ctx){
-    var array = this, len, i;
-    if(array == null){
-      throw new TypeError('can\'t convert ' + array + ' to object');
-    }
+  arrayForEach = [].forEach || function(iter, ctx){
+    var i,
+      len,
+      array = this;
+
+    if(array == null) throw new TypeError('can\'t convert ' + array + ' to object');
+
     array = Object(array);
     len = array.length >>> 0;
-    for(; i < len; i++){
+
+    for(i = 0; i < len; i++){
       if(i in array){
         if(iter.call(ctx, array[i], i, array) === false){
           break;
@@ -7596,14 +7643,14 @@ if (typeof module !== 'undefined' && module.exports) {
     throw error;
   }
 
-  function is_primitive(value) {
+  function isPrimitive(value) {
     var type = typeof value;
-    return value == null || type !== str_object && type !== str_function;
+    return value == null || type !== typeObject && type !== typeFunction;
   }
 
   // avoid old webkit bug where `typeof /re/ === 'function'` yields true.
-  function is_function(value){
-    return object_toString.call(value) === repr_function;
+  function isFunction(value){
+    return objectToString.call(value) === reprFunction;
   }
 
   // whif module
@@ -7627,7 +7674,7 @@ if (typeof module !== 'undefined' && module.exports) {
     that._queue = [];
     that._sync = false;
 
-    if (is_function(then)) {
+    if (isFunction(then)) {
       then(
         function (value) { that._resolve(value); },
         function (reason) { adopt(that, REJECTED, reason); }
@@ -7643,14 +7690,13 @@ if (typeof module !== 'undefined' && module.exports) {
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function (on_resolved, on_rejected) {
-
+    then: function (onResolved, onRejected) {
       var that = this,
         promise = new whif();
 
       that._queue.push({
-        resolve: is_function(on_resolved) ? on_resolved : id,
-        reject: is_function(on_rejected) ? on_rejected : cancel,
+        resolve: isFunction(onResolved) ? onResolved : id,
+        reject: isFunction(onRejected) ? onRejected : cancel,
         promise: promise
       });
 
@@ -7659,16 +7705,12 @@ if (typeof module !== 'undefined' && module.exports) {
       return promise;
     },
 
-    // __whif#done__ (public):
-    done: function(on_resolved){
-      return this.then(on_resolved);
-    },
-
     // __whif#catch__ (public):
-    catch: function(on_rejected){
-      return this.then(null, on_rejected);
+    catch: function(onRejected){
+      return this.then(null, onRejected);
     },
 
+    // __whif#sync__ (public):
     sync: function(){
       this._sync = true;
       return this;
@@ -7677,10 +7719,9 @@ if (typeof module !== 'undefined' && module.exports) {
     // __whif#_resolve__ (public):
     // 
     // - if this is to be resolved with itself - throw an error
-    // - if `value` is another one of ours adopt its `_state` if it
+    // - if `value` is another one of ours, adopt its `_state` if it
     //   is no longer `PENDING` or else prolong state adoption with `.then()`.
-    // - if `value` is neither none nor primitive and is
-    //   _thenable_ i.e. has a `.then()` method assume it's a promise.
+    // - if `value` is _thenable_ i.e. has a `.then()` method assume it's a promise.
     //   register this whif as `value`'s successor.
     // - resolve/reject this whif with `value` value otherwise
     // 
@@ -7690,14 +7731,14 @@ if (typeof module !== 'undefined' && module.exports) {
         called = false,
         then;
 
-      function on_resolved(value) {
+      function onResolved(value) {
         if (!called) {
           called = true;
           that._resolve(value);
         }
       }
 
-      function on_rejected(reason) {
+      function onRejected(reason) {
         if (!called) {
           called = true;
           adopt(that, REJECTED, reason);
@@ -7705,25 +7746,25 @@ if (typeof module !== 'undefined' && module.exports) {
       }
 
       if (that === value) {
-        on_rejected(new TypeError());
-      } else if (is_primitive(value)) {
-        adopt(that, RESOLVED, value);
+        onRejected(new TypeError());
+      } else if (isPrimitive(value)) {
+        adopt(that, FULFILLED, value);
       } else if (value instanceof whif) {
         if (value._state === PENDING) {
-          value.then(on_resolved, on_rejected);
+          value.then(onResolved, onRejected);
         } else {
           adopt(that, value._state, value._value);
         }
       } else {
         try {
           then = value.then;
-          if (is_function(then)) {
-            then.call(value, on_resolved, on_rejected);
+          if (isFunction(then)) {
+            then.call(value, onResolved, onRejected);
           } else {
-            adopt(that, RESOLVED, value);
+            adopt(that, FULFILLED, value);
           }
         } catch (reason) {
-          on_rejected(reason);
+          onRejected(reason);
         }
       }
 
@@ -7763,15 +7804,16 @@ if (typeof module !== 'undefined' && module.exports) {
   // - flush callstack and await next tick
   // - dequeue triples in the order registered, for each:
   //   - call registered resolve/reject handlers dependent on the transition
-  //   - reject immediately if an erro is thrown
+  //   - reject immediately if an error is thrown
   //   - `._resolve()` the returned value
   //   
   function run(promise) {
 
     function _run() {
-
       var queue = promise._queue,
-        queue_item, successor, value;
+        queue_item, 
+        successor,
+        value;
 
       while (queue.length) {
         queue_item = queue.shift();
@@ -7780,7 +7822,7 @@ if (typeof module !== 'undefined' && module.exports) {
         var called = false;
         try {
           value = (
-            promise._state === RESOLVED ?
+            promise._state === FULFILLED ?
             queue_item.resolve :
             queue_item.reject
           )(promise._value);
@@ -7788,6 +7830,7 @@ if (typeof module !== 'undefined' && module.exports) {
           called = true;
           adopt(successor, REJECTED, reason);
         }
+        // exclude resolve procedure from try-catch block since it's got its own
         if(!called){
           successor._resolve(value);
         }
@@ -7803,10 +7846,12 @@ if (typeof module !== 'undefined' && module.exports) {
     }
   }
 
+  // __whif.resolve__ (public)
   whif.resolve = function(value){
     return new whif()._resolve(value);
   };
 
+  // __whif.reject__ (public)
   whif.reject = function(reason){
     return new whif()._reject(reason);
   };
@@ -7822,11 +7867,11 @@ if (typeof module !== 'undefined' && module.exports) {
   // 
   whif.nextTick = (function () {
 
-    var owner = typeof process === str_object ? process : root,
+    var owner = typeof process === typeObject ? process : root,
       nextTick = owner.nextTick,
       prefixes = 'webkitR-mozR-msR-oR-r'.split('-');
 
-    while (!is_function(nextTick) && prefixes.length) {
+    while (!isFunction(nextTick) && prefixes.length) {
       nextTick = root[prefixes.pop() + 'equestAnimationFrame'];
     }
 
@@ -7837,52 +7882,49 @@ if (typeof module !== 'undefined' && module.exports) {
     };
   }());
 
-  // __whif.group__ (public)
+  // __whif.join__ (public)
   // 
-  // - group whifs and resolve when all are resolved,
+  // - join whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
-  // - `._resolve()` each passed item and proxy its future value
-  //   or the item _as is_ to a newly created whif which in turn
-  //   resolves/rejects the master whif
+  // - resolve each passed item and proxy its future value
+  //   or the item _as is_ to the master's values array.
   //   
-  whif.group = function (args) {
+  whif.join = function (args) {
 
     return new whif(function (resolve, reject) {
+      var len = args.length, values;
 
-      var args_len = args.length,
-        values = new Array(args_len);
+      if(!len) return resolve(args);
 
-      array_forEach.call(args, function (value, i) {
+      values = new Array(len);
+
+      arrayForEach.call(args, function(value, i){
 
         function res(value) {
           values[i] = value;
-          if (!--args_len) {
+          if (!--len) {
             resolve(values);
           }
         }
 
-        function rej(reason) {
-          reject(reason);
-        }
-
-        if (is_primitive(value)) {
+        if (isPrimitive(value)) {
           res(value);
         } else if(value instanceof whif){
           if(value._state === PENDING){
-            value.then(res, rej);
+            value.then(res, reject);
           } else {
-            (value._state === RESOLVED ? res : rej)(value._value);
+            (value._state === FULFILLED ? res : reject)(value._value);
           }
         } else {
           try {
             var then = value.then;
-            if (is_function(then)) {
-              then.call(value, res, rej);
+            if (isFunction(then)) {
+              then.call(value, res, reject);
             } else {
               res(value);
             }
           } catch (reason) {
-            rej(reason);
+            reject(reason);
           }
         }
       });
@@ -7898,9 +7940,9 @@ if (typeof module !== 'undefined' && module.exports) {
   
   /* global define */
 
-  if (typeof module === str_object && module.exports) {
+  if (typeof module === typeObject && module.exports) {
     module.exports = whif;
-  } else if (typeof define === str_function && define.amd) {
+  } else if (typeof define === typeFunction && define.amd) {
     define(function () {
       return whif;
     });
@@ -7922,7 +7964,7 @@ if (typeof module !== 'undefined' && module.exports) {
   }
 }(this));
 }).call(this,require("FWaASH"))
-},{"FWaASH":5}],40:[function(require,module,exports){
+},{"FWaASH":3}],38:[function(require,module,exports){
 var whif = require( '../src/whif.js' );
 
 module.exports = {
@@ -7954,7 +7996,7 @@ module.exports = {
     };
   }
 };
-},{"../src/whif.js":39}],41:[function(require,module,exports){
+},{"../src/whif.js":37}],39:[function(require,module,exports){
 (function (global){
 // Promises A+ Version 1.1 Tests
 // =============================
@@ -7975,4 +8017,4 @@ require('../node_modules/promises-aplus-tests/lib/tests/2.3.2.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.3.3.js');
 require('../node_modules/promises-aplus-tests/lib/tests/2.3.4.js');
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../node_modules/promises-aplus-tests/lib/tests/2.1.2.js":8,"../node_modules/promises-aplus-tests/lib/tests/2.1.3.js":9,"../node_modules/promises-aplus-tests/lib/tests/2.2.1.js":10,"../node_modules/promises-aplus-tests/lib/tests/2.2.2.js":11,"../node_modules/promises-aplus-tests/lib/tests/2.2.3.js":12,"../node_modules/promises-aplus-tests/lib/tests/2.2.4.js":13,"../node_modules/promises-aplus-tests/lib/tests/2.2.5.js":14,"../node_modules/promises-aplus-tests/lib/tests/2.2.6.js":15,"../node_modules/promises-aplus-tests/lib/tests/2.2.7.js":16,"../node_modules/promises-aplus-tests/lib/tests/2.3.1.js":17,"../node_modules/promises-aplus-tests/lib/tests/2.3.2.js":18,"../node_modules/promises-aplus-tests/lib/tests/2.3.3.js":19,"../node_modules/promises-aplus-tests/lib/tests/2.3.4.js":20,"./promises-aplus-adapter.js":40}]},{},[41])
+},{"../node_modules/promises-aplus-tests/lib/tests/2.1.2.js":6,"../node_modules/promises-aplus-tests/lib/tests/2.1.3.js":7,"../node_modules/promises-aplus-tests/lib/tests/2.2.1.js":8,"../node_modules/promises-aplus-tests/lib/tests/2.2.2.js":9,"../node_modules/promises-aplus-tests/lib/tests/2.2.3.js":10,"../node_modules/promises-aplus-tests/lib/tests/2.2.4.js":11,"../node_modules/promises-aplus-tests/lib/tests/2.2.5.js":12,"../node_modules/promises-aplus-tests/lib/tests/2.2.6.js":13,"../node_modules/promises-aplus-tests/lib/tests/2.2.7.js":14,"../node_modules/promises-aplus-tests/lib/tests/2.3.1.js":15,"../node_modules/promises-aplus-tests/lib/tests/2.3.2.js":16,"../node_modules/promises-aplus-tests/lib/tests/2.3.3.js":17,"../node_modules/promises-aplus-tests/lib/tests/2.3.4.js":18,"./promises-aplus-adapter.js":38}]},{},[39])
