@@ -20,16 +20,16 @@
   // well known strings
   // ------------------
 
-  str_object = 'object',
-  str_function = 'function',
-  repr_function = '[object Function]',
+  typeObject = 'object',
+  typeFunction = 'function',
+  reprFunction = '[object Function]',
 
   // helper functions
   // ----------------
 
-  object_toString = ({}).toString,
+  objectToString = ({}).toString,
 
-  array_forEach = [].forEach || function(iter, ctx){
+  arrayForEach = [].forEach || function(iter, ctx){
     var array = this, len, i;
     if(array == null){
       throw new TypeError('can\'t convert ' + array + ' to object');
@@ -53,14 +53,14 @@
     throw error;
   }
 
-  function is_primitive(value) {
+  function isPrimitive(value) {
     var type = typeof value;
-    return value == null || type !== str_object && type !== str_function;
+    return value == null || type !== typeObject && type !== typeFunction;
   }
 
   // avoid old webkit bug where `typeof /re/ === 'function'` yields true.
-  function is_function(value){
-    return object_toString.call(value) === repr_function;
+  function isFunction(value){
+    return objectToString.call(value) === reprFunction;
   }
 
   // whif module
@@ -84,7 +84,7 @@
     that._queue = [];
     that._sync = false;
 
-    if (is_function(then)) {
+    if (isFunction(then)) {
       then(
         function (value) { that._resolve(value); },
         function (reason) { adopt(that, REJECTED, reason); }
@@ -100,14 +100,14 @@
     // - enqueue the triple
     // - `run()` in case this promise was already resolved/rejected
     // 
-    then: function (on_resolved, on_rejected) {
+    then: function (onResolved, onRejected) {
 
       var that = this,
         promise = new whif();
 
       that._queue.push({
-        resolve: is_function(on_resolved) ? on_resolved : id,
-        reject: is_function(on_rejected) ? on_rejected : cancel,
+        resolve: isFunction(onResolved) ? onResolved : id,
+        reject: isFunction(onRejected) ? onRejected : cancel,
         promise: promise
       });
 
@@ -116,16 +116,12 @@
       return promise;
     },
 
-    // __whif#done__ (public):
-    done: function(on_resolved){
-      return this.then(on_resolved);
-    },
-
     // __whif#catch__ (public):
-    catch: function(on_rejected){
-      return this.then(null, on_rejected);
+    catch: function(onRejected){
+      return this.then(null, onRejected);
     },
 
+    // __whif#sync__ (public):
     sync: function(){
       this._sync = true;
       return this;
@@ -134,10 +130,9 @@
     // __whif#_resolve__ (public):
     // 
     // - if this is to be resolved with itself - throw an error
-    // - if `value` is another one of ours adopt its `_state` if it
+    // - if `value` is another one of ours, adopt its `_state` if it
     //   is no longer `PENDING` or else prolong state adoption with `.then()`.
-    // - if `value` is neither none nor primitive and is
-    //   _thenable_ i.e. has a `.then()` method assume it's a promise.
+    // - if `value` is _thenable_ i.e. has a `.then()` method assume it's a promise.
     //   register this whif as `value`'s successor.
     // - resolve/reject this whif with `value` value otherwise
     // 
@@ -147,14 +142,14 @@
         called = false,
         then;
 
-      function on_resolved(value) {
+      function onResolved(value) {
         if (!called) {
           called = true;
           that._resolve(value);
         }
       }
 
-      function on_rejected(reason) {
+      function onRejected(reason) {
         if (!called) {
           called = true;
           adopt(that, REJECTED, reason);
@@ -162,25 +157,25 @@
       }
 
       if (that === value) {
-        on_rejected(new TypeError());
-      } else if (is_primitive(value)) {
+        onRejected(new TypeError());
+      } else if (isPrimitive(value)) {
         adopt(that, RESOLVED, value);
       } else if (value instanceof whif) {
         if (value._state === PENDING) {
-          value.then(on_resolved, on_rejected);
+          value.then(onResolved, onRejected);
         } else {
           adopt(that, value._state, value._value);
         }
       } else {
         try {
           then = value.then;
-          if (is_function(then)) {
-            then.call(value, on_resolved, on_rejected);
+          if (isFunction(then)) {
+            then.call(value, onResolved, onRejected);
           } else {
             adopt(that, RESOLVED, value);
           }
         } catch (reason) {
-          on_rejected(reason);
+          onRejected(reason);
         }
       }
 
@@ -226,9 +221,10 @@
   function run(promise) {
 
     function _run() {
-
       var queue = promise._queue,
-        queue_item, successor, value;
+        queue_item, 
+        successor,
+        value;
 
       while (queue.length) {
         queue_item = queue.shift();
@@ -279,11 +275,11 @@
   // 
   whif.nextTick = (function () {
 
-    var owner = typeof process === str_object ? process : root,
+    var owner = typeof process === typeObject ? process : root,
       nextTick = owner.nextTick,
       prefixes = 'webkitR-mozR-msR-oR-r'.split('-');
 
-    while (!is_function(nextTick) && prefixes.length) {
+    while (!isFunction(nextTick) && prefixes.length) {
       nextTick = root[prefixes.pop() + 'equestAnimationFrame'];
     }
 
@@ -294,7 +290,7 @@
     };
   }());
 
-  // __whif.group__ (public)
+  // __whif.join__ (public)
   // 
   // - group whifs and resolve when all are resolved,
   //   reject as soon as one is rejected
@@ -302,18 +298,14 @@
   //   or the item _as is_ to a newly created whif which in turn
   //   resolves/rejects the master whif
   //   
-  whif.group = function (args) {
+  whif.join = function (args) {
 
     return new whif(function (resolve, reject) {
 
       var args_len = args.length,
         values = new Array(args_len);
 
-      function rej(reason) {
-        reject(reason);
-      }
-
-      array_forEach.call(args, function (value, i) {
+      arrayForEach.call(args, function (value, i) {
 
         function res(value) {
           values[i] = value;
@@ -322,24 +314,24 @@
           }
         }
 
-        if (is_primitive(value)) {
+        if (isPrimitive(value)) {
           res(value);
         } else if(value instanceof whif){
           if(value._state === PENDING){
-            value.then(res, rej);
+            value.then(res, reject);
           } else {
-            (value._state === RESOLVED ? res : rej)(value._value);
+            (value._state === RESOLVED ? res : reject)(value._value);
           }
         } else {
           try {
             var then = value.then;
-            if (is_function(then)) {
-              then.call(value, res, rej);
+            if (isFunction(then)) {
+              then.call(value, res, reject);
             } else {
               res(value);
             }
           } catch (reason) {
-            rej(reason);
+            reject(reason);
           }
         }
       });
@@ -355,9 +347,9 @@
   
   /* global define */
 
-  if (typeof module === str_object && module.exports) {
+  if (typeof module === typeObject && module.exports) {
     module.exports = whif;
-  } else if (typeof define === str_function && define.amd) {
+  } else if (typeof define === typeFunction && define.amd) {
     define(function () {
       return whif;
     });
