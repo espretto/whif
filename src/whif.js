@@ -30,13 +30,16 @@
   objectToString = ({}).toString,
 
   arrayForEach = [].forEach || function(iter, ctx){
-    var array = this, len, i;
-    if(array == null){
-      throw new TypeError('can\'t convert ' + array + ' to object');
-    }
+    var i,
+      len,
+      array = this;
+
+    if(array == null) throw new TypeError('can\'t convert ' + array + ' to object');
+
     array = Object(array);
     len = array.length >>> 0;
-    for(; i < len; i++){
+
+    for(i = 0; i < len; i++){
       if(i in array){
         if(iter.call(ctx, array[i], i, array) === false){
           break;
@@ -241,6 +244,7 @@
           called = true;
           adopt(successor, REJECTED, reason);
         }
+        // exclude resolve procedure from try-catch block since it's got its own
         if(!called){
           successor._resolve(value);
         }
@@ -256,10 +260,12 @@
     }
   }
 
+  // __whif.resolve__ (public)
   whif.resolve = function(value){
     return new whif()._resolve(value);
   };
 
+  // __whif.reject__ (public)
   whif.reject = function(reason){
     return new whif()._reject(reason);
   };
@@ -302,14 +308,14 @@
 
     return new whif(function (resolve, reject) {
 
-      var args_len = args.length,
-        values = new Array(args_len);
+      var len = args.length,
+        values = new Array(len);
 
-      arrayForEach.call(args, function (value, i) {
+      arrayForEach.call(args, function(value, i){
 
         function res(value) {
           values[i] = value;
-          if (!--args_len) {
+          if (!--len) {
             resolve(values);
           }
         }
