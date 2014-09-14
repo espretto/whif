@@ -28,8 +28,8 @@ signature | description
 usage
 -----
 
-use `whif` as a factory method or prepend the `new` operator and pass
-a function to it for scoped behaviour shut off from the surrounding code.
+`(`use `whif` as a factory method `||` prepend the `new` operator`)` `&&` pass
+a function to it for scoped behaviour, isolated from the surrounding code.
 ```js
 var promise = whif(function(resolve, reject){
   if(condition) resolve(value);
