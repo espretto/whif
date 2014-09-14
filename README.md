@@ -37,7 +37,7 @@ var promise = whif(function(resolve, reject){
 })
 ```
 the above's equivalent using whif's _private_ deferred api:
-```
+```js
 var promise = (function(){
   var deferred = whif();
   if(condition) deferred._resolve(value);
