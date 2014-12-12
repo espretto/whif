@@ -19,4 +19,4 @@ docs
 dist
 
 # browserified
-test/whift.test.bundle.js
+**/*.bundle.js
