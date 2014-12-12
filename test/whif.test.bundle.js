@@ -9221,6 +9221,7 @@ var sinon = (function () {
 
 (function (sinon) {
     function makeApi(sinon) {
+<<<<<<< HEAD
 
         function timesInWords(count) {
             switch (count) {
@@ -9288,6 +9289,75 @@ var sinon = (function () {
         return sinon.typeOf;
     }
 
+=======
+
+        function timesInWords(count) {
+            switch (count) {
+                case 1:
+                    return "once";
+                case 2:
+                    return "twice";
+                case 3:
+                    return "thrice";
+                default:
+                    return (count || 0) + " times";
+            }
+        }
+
+        sinon.timesInWords = timesInWords;
+        return sinon.timesInWords;
+    }
+
+    function loadDependencies(require, exports, module) {
+        var sinon = require("./util/core");
+        module.exports = makeApi(sinon);
+    }
+
+    var isNode = typeof module !== "undefined" && module.exports && typeof require == "function";
+    var isAMD = typeof define === "function" && typeof define.amd === "object" && define.amd;
+
+    if (isAMD) {
+        define(loadDependencies);
+    } else if (isNode) {
+        loadDependencies(require, module.exports, module);
+    } else if (!sinon) {
+        return;
+    } else {
+        makeApi(sinon);
+    }
+}(typeof sinon == "object" && sinon || null));
+
+},{"./util/core":43}],42:[function(require,module,exports){
+/**
+ * @depend ../sinon.js
+ */
+/**
+ * Format functions
+ *
+ * @author Christian Johansen (christian@cjohansen.no)
+ * @license BSD
+ *
+ * Copyright (c) 2010-2014 Christian Johansen
+ */
+"use strict";
+
+(function (sinon, formatio) {
+    function makeApi(sinon) {
+        function typeOf(value) {
+            if (value === null) {
+                return "null";
+            } else if (value === undefined) {
+                return "undefined";
+            }
+            var string = Object.prototype.toString.call(value);
+            return string.substring(8, string.length - 1).toLowerCase();
+        };
+
+        sinon.typeOf = typeOf;
+        return sinon.typeOf;
+    }
+
+>>>>>>> master
     function loadDependencies(require, exports, module) {
         var sinon = require("./util/core");
         module.exports = makeApi(sinon);
@@ -9354,11 +9424,19 @@ var sinon = (function () {
     function isFunction(obj) {
         return typeof obj === "function" || !!(obj && obj.constructor && obj.call && obj.apply);
     }
+<<<<<<< HEAD
 
     function isReallyNaN(val) {
         return typeof val === "number" && isNaN(val);
     }
 
+=======
+
+    function isReallyNaN(val) {
+        return typeof val === "number" && isNaN(val);
+    }
+
+>>>>>>> master
     function mirrorProperties(target, source) {
         for (var prop in source) {
             if (!hasOwn.call(target, prop)) {
@@ -9882,17 +9960,39 @@ if (typeof sinon == "undefined") {
                 }
 
                 if (!this.responses) { this.responses = []; }
+<<<<<<< HEAD
 
                 if (arguments.length == 1) {
                     body = method;
                     url = method = null;
                 }
 
+=======
+
+                if (arguments.length == 1) {
+                    body = method;
+                    url = method = null;
+                }
+
+>>>>>>> master
                 if (arguments.length == 2) {
                     body = url;
                     url = method;
                     method = null;
                 }
+<<<<<<< HEAD
+
+                push.call(this.responses, {
+                    method: method,
+                    url: url,
+                    response: typeof body == "function" ? body : responseArray(body)
+                });
+            },
+
+            respond: function respond() {
+                if (arguments.length > 0) {
+                    this.respondWith.apply(this, arguments);
+=======
 
                 push.call(this.responses, {
                     method: method,
@@ -9906,6 +10006,23 @@ if (typeof sinon == "undefined") {
                     this.respondWith.apply(this, arguments);
                 }
 
+                var queue = this.queue || [];
+                var requests = queue.splice(0, queue.length);
+                var request;
+
+                while (request = requests.shift()) {
+                    this.processRequest(request);
+>>>>>>> master
+                }
+            },
+
+            processRequest: function processRequest(request) {
+                try {
+                    if (request.aborted) {
+                        return;
+                    }
+
+<<<<<<< HEAD
                 var queue = this.queue || [];
                 var requests = queue.splice(0, queue.length);
                 var request;
@@ -9932,6 +10049,19 @@ if (typeof sinon == "undefined") {
                         }
                     }
 
+=======
+                    var response = this.response || [404, {}, ""];
+
+                    if (this.responses) {
+                        for (var l = this.responses.length, i = l - 1; i >= 0; i--) {
+                            if (match.call(this, this.responses[i], request)) {
+                                response = this.responses[i].response;
+                                break;
+                            }
+                        }
+                    }
+
+>>>>>>> master
                     if (request.readyState != 4) {
                         this.log(response, request);
 
@@ -9950,6 +10080,7 @@ if (typeof sinon == "undefined") {
 
     var isNode = typeof module !== "undefined" && module.exports && typeof require == "function";
     var isAMD = typeof define === "function" && typeof define.amd === "object" && define.amd;
+<<<<<<< HEAD
 
     function loadDependencies(require, exports, module) {
         var sinon = require("./core");
@@ -9967,6 +10098,25 @@ if (typeof sinon == "undefined") {
     }
 }());
 
+=======
+
+    function loadDependencies(require, exports, module) {
+        var sinon = require("./core");
+        require("./fake_xml_http_request");
+        makeApi(sinon);
+        module.exports = sinon;
+    }
+
+    if (isAMD) {
+        define(loadDependencies);
+    } else if (isNode) {
+        loadDependencies(require, module.exports, module);
+    } else {
+        makeApi(sinon);
+    }
+}());
+
+>>>>>>> master
 },{"./core":43,"./fake_xml_http_request":47}],46:[function(require,module,exports){
 (function (global){
 /*global lolex */
@@ -10146,11 +10296,19 @@ if (typeof sinon == "undefined") {
             error: []
         }
     }
+<<<<<<< HEAD
 
     UploadProgress.prototype.addEventListener = function addEventListener(event, listener) {
         this.eventListeners[event].push(listener);
     };
 
+=======
+
+    UploadProgress.prototype.addEventListener = function addEventListener(event, listener) {
+        this.eventListeners[event].push(listener);
+    };
+
+>>>>>>> master
     UploadProgress.prototype.removeEventListener = function removeEventListener(event, listener) {
         var listeners = this.eventListeners[event] || [];
 
@@ -10327,10 +10485,17 @@ if (typeof sinon == "undefined") {
             xmlDoc.async = "false";
             xmlDoc.loadXML(text);
         }
+<<<<<<< HEAD
 
         return xmlDoc;
     };
 
+=======
+
+        return xmlDoc;
+    };
+
+>>>>>>> master
     FakeXMLHttpRequest.statusCodes = {
         100: "Continue",
         101: "Switching Protocols",
@@ -10435,6 +10600,7 @@ if (typeof sinon == "undefined") {
                 if (unsafeHeaders[header] || /^(Sec-|Proxy-)/.test(header)) {
                     throw new Error("Refused to set unsafe header \"" + header + "\"");
                 }
+<<<<<<< HEAD
 
                 if (this.requestHeaders[header]) {
                     this.requestHeaders[header] += "," + value;
@@ -10448,11 +10614,27 @@ if (typeof sinon == "undefined") {
                 verifyRequestOpened(this);
                 this.responseHeaders = {};
 
+=======
+
+                if (this.requestHeaders[header]) {
+                    this.requestHeaders[header] += "," + value;
+                } else {
+                    this.requestHeaders[header] = value;
+                }
+            },
+
+            // Helps testing
+            setResponseHeaders: function setResponseHeaders(headers) {
+                verifyRequestOpened(this);
+                this.responseHeaders = {};
+
+>>>>>>> master
                 for (var header in headers) {
                     if (headers.hasOwnProperty(header)) {
                         this.responseHeaders[header] = headers[header];
                     }
                 }
+<<<<<<< HEAD
 
                 if (this.async) {
                     this.readyStateChange(FakeXMLHttpRequest.HEADERS_RECEIVED);
@@ -10465,6 +10647,20 @@ if (typeof sinon == "undefined") {
             send: function send(data) {
                 verifyState(this);
 
+=======
+
+                if (this.async) {
+                    this.readyStateChange(FakeXMLHttpRequest.HEADERS_RECEIVED);
+                } else {
+                    this.readyState = FakeXMLHttpRequest.HEADERS_RECEIVED;
+                }
+            },
+
+            // Currently treats ALL data as a DOMString (i.e. no Document)
+            send: function send(data) {
+                verifyState(this);
+
+>>>>>>> master
                 if (!/^(get|head)$/i.test(this.method)) {
                     var contentType = getHeader(this.requestHeaders, "Content-Type");
                     if (this.requestHeaders[contentType]) {
@@ -10600,6 +10796,7 @@ if (typeof sinon == "undefined") {
             LOADING: 3,
             DONE: 4
         });
+<<<<<<< HEAD
 
         sinon.useFakeXMLHttpRequest = function () {
             FakeXMLHttpRequest.restore = function restore(keepOnCreate) {
@@ -10611,6 +10808,19 @@ if (typeof sinon == "undefined") {
                     global.ActiveXObject = sinonXhr.GlobalActiveXObject;
                 }
 
+=======
+
+        sinon.useFakeXMLHttpRequest = function () {
+            FakeXMLHttpRequest.restore = function restore(keepOnCreate) {
+                if (sinonXhr.supportsXHR) {
+                    global.XMLHttpRequest = sinonXhr.GlobalXMLHttpRequest;
+                }
+
+                if (sinonXhr.supportsActiveX) {
+                    global.ActiveXObject = sinonXhr.GlobalActiveXObject;
+                }
+
+>>>>>>> master
                 delete FakeXMLHttpRequest.restore;
 
                 if (keepOnCreate !== true) {
@@ -11228,6 +11438,14 @@ if (typeof sinon == "undefined") {
 
         if (typeof matcher === "boolean") {
             return matcher === object;
+        }
+
+        if (typeof(matcher) === "undefined") {
+            return typeof(object) === "undefined";
+        }
+
+        if (matcher === null) {
+            return object === null;
         }
 
         if (typeof(matcher) === "undefined") {
