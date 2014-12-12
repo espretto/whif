@@ -1,5 +1,6 @@
 /*!
  * whif javascript library released under MIT licence
+ * forked from https://github.com/rhysbrettbowen/promise_impl
  * http://mariusrunge.com/mit-licence.html
  */
 
@@ -251,7 +252,7 @@
     }
 
     if (promise._state !== PENDING) {
-      if(this._sync){
+      if(promise._sync){
         _run();
       } else {
         whif.nextTick(_run);

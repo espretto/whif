@@ -91,6 +91,7 @@ var promise = whif
   .resolve($.ajax(request_settings))
   .sync()
   .then( /* ... */ )
+  .sync()
   .fail( /* ... */ );
 ```
 be careful with this option since success may be yielded asynchronously but failure synchronously depending on your implementation. remember that promises were normalized by prolonging the resolution because of these potential differences in the first place.

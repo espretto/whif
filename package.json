@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "browserify": "~3.46.1",
+    "expect.js": "^0.3.1",
     "grunt": "~0.4.4",
     "grunt-browserify": "~2.0.8",
     "grunt-contrib-clean": "~0.5.0",
@@ -38,21 +39,5 @@
   "license": "http://mariusrunge.com/mit-licence.html",
   "bugs": {
     "url": "https://github.com/espretto/whif/issues"
-  },
-  "testling": {
-    "browsers": [
-      "ie/10",
-      "chrome/4.0",
-      "chrome/canary",
-      "firefox/3.0",
-      "firefox/nightly",
-      "opera/10..latest",
-      "safari/4..latest",
-      "iphone/6.0",
-      "ipad/6.0",
-      "android-browser/4.2"
-    ],
-    "harness": "mocha",
-    "files": "test/*.test.js"
   }
 }
