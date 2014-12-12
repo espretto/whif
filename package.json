@@ -1,6 +1,6 @@
 {
   "name": "whif",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Promises A+ implementation",
   "main": "src/whif.js",
   "directories": {
@@ -30,7 +30,7 @@
     "promise",
     "deferred",
     "A+",
-    "plus",
+    "A Plus",
     "when",
     "asynchronous"
   ],
@@ -38,21 +38,5 @@
   "license": "http://mariusrunge.com/mit-licence.html",
   "bugs": {
     "url": "https://github.com/espretto/whif/issues"
-  },
-  "testling": {
-    "browsers": [
-      "ie/10",
-      "chrome/4.0",
-      "chrome/canary",
-      "firefox/3.0",
-      "firefox/nightly",
-      "opera/10..latest",
-      "safari/4..latest",
-      "iphone/6.0",
-      "ipad/6.0",
-      "android-browser/4.2"
-    ],
-    "harness": "mocha",
-    "files": "test/*.test.js"
   }
 }

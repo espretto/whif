@@ -251,7 +251,7 @@
     }
 
     if (promise._state !== PENDING) {
-      if(this._sync){
+      if(promise._sync){
         _run();
       } else {
         whif.nextTick(_run);
