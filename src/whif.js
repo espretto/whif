@@ -271,29 +271,50 @@
   };
 
   // __whif.nextTick__ (public)
-  // inspired by [WebReflection](https://gist.github.com/WebReflection/2953527)
-  // 
-  // - try `process.nextTick`
-  // - fall back on `requestAnimationFrame` and all its vendor prefixes
-  // - make sure the above are called in the context of their owner object
-  // - fallback on `setImmediate`
-  // - fallback on `setTimeout`
+  // see [gist](https://gist.github.com/espretto/ec79d6d0fc7a898b92b1)
+  // prefers
+  //  
+  // - `process.nextTick` over
+  // - `process.setImmediate` or `window.setImmediate` over
+  // - `window.requestAnimationFrame` over
+  // - `window.postMessage` and `window.addEventListener` over
+  // - `setTimeout` as the very last resort 
   // 
   whif.nextTick = (function () {
 
-    var owner = typeof process === typeObject ? process : root,
-      nextTick = owner.nextTick,
-      prefixes = 'webkitR-mozR-msR-oR-r'.split('-');
-
-    while (!isFunction(nextTick) && prefixes.length) {
-      nextTick = root[prefixes.pop() + 'equestAnimationFrame'];
+    var owner = typeof process === "undefined" ? root : process,
+        vendorPrefixes = "webkitR-mozR-msR-oR-r".split("-"),
+        suffix = "equestAnimationFrame",
+        nextTick = owner.nextTick || owner.setImmediate,
+        queue;
+         
+    while (!nextTick && vendorPrefixes.length){
+      nextTick = owner[vendorPrefixes.pop() + suffix];
     }
-
-    nextTick = nextTick || root.setImmediate || setTimeout;
-
-    return function () {
+     
+    if (!nextTick && root.postMessage && root.addEventListener){
+      queue = [];
+       
+      root.addEventListener('message', function(evt){
+        var source = evt.source;
+         
+        if ((source == root || source == null) && evt.data === 'nextTick'){
+          evt.stopPropagation();
+          if (queue.length) queue.shift()();
+        }
+      }, true);
+       
+      nextTick = function(func){
+        queue.push(func);
+        root.postMessage('nextTick', '*');
+      };
+    }
+     
+    nextTick = nextTick || setTimeout;
+     
+    return function (){
       return nextTick.apply(owner, arguments);
-    };
+    }; 
   }());
 
   // __whif.join__ (public)
@@ -325,19 +346,14 @@
 
   // export
   // ------
-  // 
-  // - cjs
-  // - amd - anonymous
-  // - browser - opt to rename
   
-  /* global define */
+  whif.VERSION = '1.2.0';
 
+  /* global define */
   if (typeof module === typeObject && module.exports) {
     module.exports = whif;
   } else if (typeof define === typeFunction && define.amd) {
-    define(function () {
-      return whif;
-    });
+    define(function (){ return whif; });
   } else {
 
     // __whif.noConflict__ (public):
