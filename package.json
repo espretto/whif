@@ -8,18 +8,11 @@
     "test": "test"
   },
   "devDependencies": {
-    "browserify": "~3.46.1",
-    "grunt": "~0.4.4",
-    "grunt-browserify": "~2.0.8",
-    "grunt-contrib-clean": "~0.5.0",
-    "grunt-contrib-jshint": "^0.10.0",
-    "grunt-contrib-uglify": "~0.4.0",
-    "grunt-docker": "0.0.8",
-    "mocha": "~1.18.2",
-    "promises-aplus-tests": "~2.0.4"
+    "mocha": "^7.1.1",
+    "promises-aplus-tests": "^2.1.2"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/whif.test.js",
+    "test": "node_modules/.bin/mocha test/whif.spec.js",
     "gzip": "gzip -c9 dist/whif.min.js > dist/whif.min.js.gz"
   },
   "repository": {
