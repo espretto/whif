@@ -78,7 +78,7 @@ describe('whif extras', function () {
       // this probably is subject to a race condition
       
       function delay (n) { 
-        return whif(function (res) {
+        return new whif(function (res) {
           setTimeout(res, n)
         })
       }
@@ -93,11 +93,11 @@ describe('whif extras', function () {
           .then(function () { done() })
     })
 
-    it.skip('should proxy the first rejection without waiting for the others', function (done) {
+    it('should proxy the first rejection without waiting for the others', function (done) {
       // this probably is subject to a race condition
 
       function delay (n) {
-        return whif(function (res) {
+        return new whif(function (res) {
           setTimeout(res, n)
         })
       }
