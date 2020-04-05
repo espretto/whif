@@ -191,9 +191,9 @@ whif.reject = function (reason) {
  * @see [WebReflection](https://gist.github.com/WebReflection/2953527)
  */
 whif.nextTick = (function () {
-  var owner = typeof process === "undefined" ? window : process
-  var vendorPrefixes = "webkitR-mozR-msR-oR-r".split("-")
-  var suffix = "equestAnimationFrame"
+  var owner = typeof process === 'undefined' ? window : process
+  var vendorPrefixes = 'webkitR-mozR-msR-oR-r'.split('-')
+  var suffix = 'equestAnimationFrame'
   var nextTick = owner.nextTick || owner.setImmediate
        
   while (!nextTick && vendorPrefixes.length) {
