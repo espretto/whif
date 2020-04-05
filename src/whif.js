@@ -189,16 +189,35 @@ whif.reject = function (reason) {
  * @see [WebReflection](https://gist.github.com/WebReflection/2953527)
  */
 whif.nextTick = (function () {
-  var owner = typeof process === 'object' ? process : window
-  var nextTick = owner.nextTick
-  var prefixes = 'webkitR,mozR,msR,oR,r'.split(',')
-
-  while (!isFunction(nextTick) && prefixes.length) {
-    nextTick = window[prefixes.pop() + 'equestAnimationFrame']
+  var owner = typeof process === "undefined" ? window : process
+  var vendorPrefixes = "webkitR-mozR-msR-oR-r".split("-")
+  var suffix = "equestAnimationFrame"
+  var nextTick = owner.nextTick || owner.setImmediate
+       
+  while (!nextTick && vendorPrefixes.length) {
+    nextTick = owner[vendorPrefixes.pop() + suffix]
   }
-
-  nextTick = nextTick || window.setImmediate || setTimeout
-
+   
+  if (!nextTick && window.postMessage && window.addEventListener){
+    var queue = []
+     
+    window.addEventListener('message', function (event) {
+      var source = event.source
+       
+      if ((source == window || source == null) && event.data === 'nextTick') {
+        event.stopPropagation()
+        if (queue.length) queue.shift()()
+      }
+    }, true)
+     
+    nextTick = function (func) {
+      queue.push(func)
+      window.postMessage('nextTick', '*')
+    };
+  }
+   
+  nextTick = nextTick || setTimeout
+   
   return function () {
     return nextTick.apply(owner, arguments)
   }
