@@ -2,12 +2,13 @@
   "name": "whif",
   "version": "1.2.0",
   "description": "Promises A+ implementation",
-  "main": "src/whif.js",
+  "main": "dist/whif.js",
   "directories": {
     "doc": "docs",
     "test": "test"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "browserify": "~3.46.1",
     "expect.js": "^0.3.1",
     "grunt": "~0.4.4",
@@ -18,10 +19,29 @@
     "grunt-docker": "0.0.8",
     "mocha": "~1.18.2",
     "promises-aplus-tests": "~2.0.4"
+=======
+    "expect.js": "^0.3.1",
+    "grunt": "^1.1.0",
+    "grunt-cli": "^1.3.2",
+    "grunt-umd": "^3.0.0",
+    "mocha": "^7.1.1",
+    "promises-aplus-tests": "^2.1.2",
+    "testling": "^1.7.3"
+>>>>>>> master
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha test/whif.test.js",
-    "gzip": "gzip -c9 dist/whif.min.js > dist/whif.min.js.gz"
+    "build": "grunt umd",
+    "test": "node_modules/.bin/mocha test/extras.spec.js",
+    "testling": "testling -u --port 8000"
+  },
+  "testling": {
+    "harness": "mocha-bdd",
+    "files": [
+      "test/aplus.spec.js"
+    ],
+    "browsers": [
+      "ie/6"
+    ]
   },
   "repository": {
     "type": "git",
@@ -36,7 +56,7 @@
     "asynchronous"
   ],
   "author": "espretto",
-  "license": "http://mariusrunge.com/mit-licence.html",
+  "license": "https://github.com/espretto/whif/LICENCE",
   "bugs": {
     "url": "https://github.com/espretto/whif/issues"
   }
