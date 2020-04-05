@@ -78,7 +78,7 @@ describe('whif extras', function () {
       // this probably is subject to a race condition
       
       function delay (n) { 
-        return new whif(function (res) {
+        return whif(function (res) {
           setTimeout(res, n)
         })
       }
@@ -97,7 +97,7 @@ describe('whif extras', function () {
       // this probably is subject to a race condition
 
       function delay (n) {
-        return new whif(function (res) {
+        return whif(function (res) {
           setTimeout(res, n)
         })
       }

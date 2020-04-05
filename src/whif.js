@@ -10,7 +10,7 @@ function id (any) {
   return any
 }
 
-function cancel(err) {
+function cancel (err) {
   throw err
 }
 
@@ -39,6 +39,8 @@ var FULFILLED = 1
  * promise class
  */
 function whif (then) {
+  if (!(this instanceof whif)) return new whif(then)
+
   this._state = PENDING
   this._queue = []
   this._sync = false
