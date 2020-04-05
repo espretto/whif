@@ -10,7 +10,7 @@ function id (any) {
   return any
 }
 
-function cancel(err) {
+function cancel (err) {
   throw err
 }
 
@@ -39,6 +39,8 @@ var FULFILLED = 1
  * promise class
  */
 function whif (then) {
+  if (!(this instanceof whif)) return new whif(then)
+
   this._state = PENDING
   this._queue = []
   this._sync = false
@@ -63,7 +65,7 @@ whif.prototype = {
       successor: successor
     })
 
-    run(this)
+    this._run()
 
     return successor
   },
@@ -86,8 +88,8 @@ whif.prototype = {
    * - resolve/reject this whif with `value` value otherwise
    */
   _resolve: function (value) {
-    var that = this,
-      called = false
+    var that = this
+    var called = false
 
     function onResolved(value) {
       if (!called) {
@@ -147,33 +149,34 @@ whif.prototype = {
     if (this._state === PENDING) {
       this._state = nextState
       this._value = value
-      run(this)
+      this._run()
     }
-  }
-}
+  },
 
-function run (promise) {
-  if (promise._state === PENDING) return
+  _run: function () {
+    if (this._state === PENDING) return
 
-  function _run () {
-    while (promise._queue.length) {
-      var task = promise._queue.shift()
-      var value
-      
-      try {
-        value = (promise._state === FULFILLED ? task.resolve : task.reject)(promise._value)
-      } catch (reason) {
-        task.successor._reject(reason)
-        continue
+    var that = this
+    function run () {
+      while (that._queue.length) {
+        var task = that._queue.shift()
+        var value
+        
+        try {
+          value = (that._state === FULFILLED ? task.resolve : task.reject)(that._value)
+        }
+        catch (reason) {
+          task.successor._reject(reason)
+          continue
+        }
+
+        task.successor._resolve(value)
       }
-
-      task.successor._resolve(value)
     }
+
+    if (this._sync) run()
+    else whif.nextTick(run)
   }
-
-
-  if (promise._sync) _run()
-  else whif.nextTick(_run)
 }
 
 whif.resolve = function (value) {
@@ -190,13 +193,14 @@ whif.reject = function (reason) {
  * @see [WebReflection](https://gist.github.com/WebReflection/2953527)
  */
 whif.nextTick = (function () {
-  var owner = typeof process === "undefined" ? window : process
-  var vendorPrefixes = "webkitR-mozR-msR-oR-r".split("-")
-  var suffix = "equestAnimationFrame"
+  var owner =
+    typeof process !== 'undefined' ? process :
+    typeof window !== 'undefined' ? window : this
+  var vendorPrefixes = 'webkitR,mozR,msR,oR,r'.split(',')
   var nextTick = owner.nextTick || owner.setImmediate
        
   while (!nextTick && vendorPrefixes.length) {
-    nextTick = owner[vendorPrefixes.pop() + suffix]
+    nextTick = owner[vendorPrefixes.pop() + 'equestAnimationFrame']
   }
    
   if (!nextTick && window.postMessage && window.addEventListener){

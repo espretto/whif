@@ -93,7 +93,7 @@ describe('whif extras', function () {
           .then(function () { done() })
     })
 
-    it.skip('should proxy the first rejection without waiting for the others', function (done) {
+    it('should proxy the first rejection without waiting for the others', function (done) {
       // this probably is subject to a race condition
 
       function delay (n) {

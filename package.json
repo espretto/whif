@@ -8,18 +8,6 @@
     "test": "test"
   },
   "devDependencies": {
-<<<<<<< HEAD
-    "browserify": "~3.46.1",
-    "expect.js": "^0.3.1",
-    "grunt": "~0.4.4",
-    "grunt-browserify": "~2.0.8",
-    "grunt-contrib-clean": "~0.5.0",
-    "grunt-contrib-jshint": "^0.10.0",
-    "grunt-contrib-uglify": "~0.4.0",
-    "grunt-docker": "0.0.8",
-    "mocha": "~1.18.2",
-    "promises-aplus-tests": "~2.0.4"
-=======
     "expect.js": "^0.3.1",
     "grunt": "^1.1.0",
     "grunt-cli": "^1.3.2",
@@ -27,18 +15,15 @@
     "mocha": "^7.1.1",
     "promises-aplus-tests": "^2.1.2",
     "testling": "^1.7.3"
->>>>>>> master
   },
   "scripts": {
     "build": "grunt umd",
-    "test": "node_modules/.bin/mocha test/extras.spec.js",
+    "test": "node_modules/.bin/mocha test/*.spec.js",
     "testling": "testling -u --port 8000"
   },
   "testling": {
     "harness": "mocha-bdd",
-    "files": [
-      "test/aplus.spec.js"
-    ],
+    "files": "test/*.spec.js",
     "browsers": [
       "ie/6"
     ]
