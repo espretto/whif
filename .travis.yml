@@ -1,0 +1,7 @@
+language: node_js
+before_install: true
+install: npm install
+before_script: true
+script: npm test
+node_js:
+  - "8.12.0"
