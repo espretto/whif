@@ -1,11 +1,10 @@
 /*!
 * whif - promises A+
 * @licence MIT
+* @module whif
+* @version 1.2.1
 */
 
-/**
- * helper functions
- */
 function id (any) {
   return any
 }
@@ -28,15 +27,17 @@ function forEach (arr, fn) {
   for (var len = arr.length, i = -1; ++i < len;) fn(arr[i], i)
 }
 
-/**
- * promise states
- */
 var PENDING = -1
 var REJECTED = 0
 var FULFILLED = 1
 
 /**
  * promise class
+ * @class whif
+ * @public
+ * @param {Function} init - factory to construct/fetch the future value,
+ *   will be called with callbacks (resolve, reject) to fulfill or reject
+ *   the promise being constructed
  */
 function whif (then) {
   if (!(this instanceof whif)) return new whif(then)
@@ -56,6 +57,14 @@ function whif (then) {
 
 whif.prototype = {
 
+  /**
+   * register callbacks to access future values
+   * @function whif#then
+   * @public
+   * @param  {Function} resolve - called on fulfillment
+   * @param  {Function} reject - called on rejection
+   * @return {whif} successor promise
+   */
   then: function (resolve, reject) {
     var successor = new whif()
 
@@ -70,10 +79,25 @@ whif.prototype = {
     return successor
   },
 
+  /**
+   * register a rejection callback, this is equivalent to `.then(null, cb)`
+   * @function whif#fail
+   * @public
+   * @param  {Function} reject - called on rejection
+   * @return {whif} successor promise
+   */
   fail: function (reject) {
     return this.then(null, reject)
   },
 
+  /**
+   * marks this promise as synchronous. all registered callbacks will be called
+   * synchronously. this deviates from the spec but allows for a minor speedup
+   * by avoiding duplicate runloop cycles.
+   * @function whif#sync
+   * @public
+   * @return {whif} the instance itself
+   */
   sync: function () {
     this._sync = true
     return this
@@ -179,18 +203,31 @@ whif.prototype = {
   }
 }
 
+/**
+ * factory to fulfill a promise
+ * @public
+ * @param  {*} value - the value to wrap in the promise
+ * @return {whif} the promise wrapping the input value 
+ */
 whif.resolve = function (value) {
   return new whif()._resolve(value)
 }
 
+/**
+ * factory to reject a promise
+ * @public
+ * @param  {*} reason - the reason why the promise was rejected
+ * @return {whif} the promise rejected for the given reason
+ */
 whif.reject = function (reason) {
   return new whif()._reject(reason)
 }
 
 /**
- * whif.nextTick
- * 
- * @see [WebReflection](https://gist.github.com/WebReflection/2953527)
+ * schedule a function to be executed on the next runloop cycle
+ * @public
+ * @param {Function} fn - the function to execute on the next runloop cycle
+ * @see https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/
  */
 whif.nextTick = (function () {
   var owner =
@@ -227,15 +264,15 @@ whif.nextTick = (function () {
     return nextTick.apply(owner, arguments)
   }
 }())
-
+   
 /**
- * whif.join
- * 
- * - join whifs and resolve when all are resolved,
- *   reject as soon as one is rejected
- * - resolve each passed item and proxy its future value
- *   or the item _as is_ to the master's values array.
- */   
+ * group multiple promises and either resolve when all of them have them been
+ * fulfilled or reject upon the first rejection, not waiting for the others.
+ * @public
+ * @param {whif[]} promises - promises to group
+ * @return {whif} group promise, resolve handlers are called with an array
+ *   of future values
+ */
 whif.join = function (args) {
 
   return new whif(function (resolve, reject) {
