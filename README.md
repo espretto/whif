@@ -1,5 +1,6 @@
 
-# whif
+# whif [![Build Status](https://travis-ci.org/espretto/whif.svg?branch=master)](https://travis-ci.org/espretto/whif)
+
 whif is a [Promises A+][3] implementation compliant with version 1.1 passing the [tests][2]. many thanks to this lib's originator Rhys Brett-Bowen and his great article on [Promises/A+ - understanding the spec through implementation][1].
 
 [1]: http://modernjavascript.blogspot.de/2013/08/promisesa-understanding-by-doing.html
