@@ -218,7 +218,7 @@ whif.nextTick = (function () {
     nextTick = function (func) {
       queue.push(func)
       window.postMessage('nextTick', '*')
-    };
+    }
   }
    
   nextTick = nextTick || setTimeout
