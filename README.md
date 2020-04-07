@@ -89,11 +89,13 @@ be careful with this option since success may be yielded asynchronously but fail
 
 <a id="testing"></a>
 ## Testing
-whif is tested against the [A+ testsuite](https://github.com/promises-aplus/promises-tests) which you can execute with `npm test`. In addition you may run the tests in the browser. First launch `npm run testling`, then open the url shown in the commandline http://localhost:8000/__testling?show=true.
+whif is tested against the [A+ testsuite](https://github.com/promises-aplus/promises-tests) which you can execute with `npm test`. In addition you may run the tests in the browser. First launch `npm run testling`, then open the url shown in the commandline http://localhost:8000/__testling?show=true. For convenience, a static version of [testling's output](https://espretto.github.io/whif/testling/) has been pushed to gh-pages.
 
 <a id="building"></a>
 ## Building
 whif targets older environnements by using the [UMD](https://github.com/umdjs/umd) pattern. Use `npm run build` to generate the bundle `./dist/whif.js`. Both the global export as well as the AMD module are named `whif`.
+
+the API reference is based on [jsdoc](https://jsdoc.app/)strings in the source, built using `npm run --silent build-docs` and appended to this readme.
 
 <a id="api-reference"></a>
 ## API reference

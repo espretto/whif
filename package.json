@@ -17,7 +17,7 @@
     "testling": "^1.7.3"
   },
   "scripts": {
-    "docs": "jsdoc -c ./docs/jsdoc.conf.js | ./docs/render.js",
+    "build-docs": "jsdoc -c ./jsdoc.conf.js | ./scripts/jsdoc2md.js",
     "build": "grunt umd",
     "test": "node_modules/.bin/mocha test/*.spec.js",
     "testling": "testling -u --port 8000"
